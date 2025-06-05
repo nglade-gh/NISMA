@@ -1,0 +1,124 @@
+@startuml
+'Mother ship
+    class Model{
+        +Grains: Grains[]
+        +Behaviours: Behaviours[]
+        +Fields: girl idk
+    }
+    
+'Main classes
+    Class Grains{
+        +id: int
+        +name: String
+        +color: color_list
+        -icon: icon_list
+        -invisible: boolean
+        -size: grain_size
+        -description: String
+        -halfLife: int
+        -movementProbability: percentage_value
+        -allowedDirection: directions[]
+        *fieldProductions: pairs[]
+        *fieldInfluence: pairs[]
+        *fieldPermeable: pairs[]
+        
+    }
+    
+    class Behaviours{
+        +name: String
+        *fieldPredicates : TO BE FINISHED
+        +probability: percentage_value
+        -agePredicate: age_pred
+        +mainReactiveId: int
+        -mainProductId: int
+        -sourceReactive: int
+        -reaction: react
+        -allowedDirection: direction []
+        *fieldProduction: percentage_value
+        *fieldInfluences: percentage_value
+        
+    }
+    class Fields{
+        id:int
+        name: String
+        color: color_list
+        allowedDirections: direction[]
+        speed: percentage_value
+        halfLife: int
+    }
+   
+   
+'sub classes
+    class percentage_value{
+        percentage_value: Number [0-1] 
+    }
+    class percentage_value_neg{
+        percentage_value: Number [(-1)-1] 
+    }
+    class grain_size{
+        Grain_Size : Int [0-5]
+    }
+    class pairs{
+        id: int
+        value: percentage_value
+    }
+    enum directions{
+        "Left"
+        "Up"
+        "Right"
+        "Down"
+        "LeftUp"
+        "RightUp"
+        "RightDown"
+        "LeftDown"
+    }
+   enum icon_list{
+        list
+        of
+        a lot
+        of
+        icons
+   
+   }
+   
+   enum color_list{
+        list
+        of
+        145
+        colours
+   }
+   enum operators{
+    GreaterThan
+    EqualTo
+    SmallerThan
+    etc..
+    }
+   
+   class react{
+        op: operator
+        constant: int
+   }
+
+    'Relations entre classes
+    Model *-- Grains
+    Model *-- Behaviours
+    Model *-- Fields
+    
+    Grains *-- grain_size
+    Grains *-- directions
+    Grains *-- percentage_value
+    Grains *-- pairs
+    Grains *-- color_list
+    Grains *-- icon_list
+    
+    pairs  *-- percentage_value_neg
+    react *-- operators
+    
+    Behaviours *-- directions
+    Behaviours *-- percentage_value
+    Behaviours *-- react
+    
+    Fields *-- directions
+    Fields *-- percentage_value
+    Fields *-- color_list
+@enduml
