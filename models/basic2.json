@@ -1,0 +1,49 @@
+{
+  "model":
+  {
+    "grains":
+    [{
+      "name":"Agent",
+      "color":"DarkGoldenRod"
+    }
+    , 
+      {
+        "id":1,
+        "name":"Agent 1",
+        "color":"Teal"
+      }],
+    
+    "behaviours":
+    [{
+      "name":"Behaviour",
+      "mainReactiveId":0,
+      "mainProductId":0,
+      "sourceReactive":0
+    }
+    ,
+      {
+        "name":"Behaviour 1",
+        "mainReactiveId":0,
+        "mainProductId":0,
+        "sourceReactive":0
+      }],
+    
+    "fields":
+    [{
+      "name":"Field",
+      "color":"HoneyDew"
+    }
+    ,
+      {
+        "id":1,
+        "name":"Field 1",
+        "color":"DarkSlateGrey"
+      }
+    ]},
+  
+  "simulation":
+  {
+    "name":"",
+    "description":""
+  }
+}
