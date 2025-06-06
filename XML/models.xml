@@ -40,7 +40,7 @@
         <!-- attributes: optional by default so i'm using them for field dependent settings -->
         <attribute name="fieldProductions" type="nbd:Pairs"/>
         <attribute name="fieldInfluence" type="nbd:Pairs"/>
-        <attribute name="fieldPermeable" type="nbd:Percentage"/>
+        <attribute name="fieldPermeable" type="nbd:Pairs"/>
     </complexType>
     
     <complexType name="Behaviours">
