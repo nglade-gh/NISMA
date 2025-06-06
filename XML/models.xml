@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        targetNamespace="http://www.univ-grenoble-alpes.fr/somethingsomethingidk"
+        xmlns:nbd="http://www.univ-grenoble-alpes.fr/somethingsomethingidk"
+        elementFormDefault="qualified" >
+    
+    <!-- element racine -->
+    <element name="models" type="nbd:Model">
+        <!-- TO DO -->
+    </element>
+    
+    
+    
+    <!--######################### Complex types #########################-->
+    <complexType name="Model" >
+        <sequence>
+            <!-- unbounded in theory, bounded by how much ram you have in reality -->
+            <element name="grains" type="nbd:Grains" minOccurs="0" maxOccurs="unbounded"/>
+            <element name="behaviours" type="nbd:Behaviours" minOccurs="0" maxOccurs="unbounded"/>
+            <element name="fields" type="nbd:Fields" minOccurs="0" maxOccurs="unbounded"/>
+        </sequence>
+    </complexType>
+    
+    
+    <complexType name="Grains">
+        <sequence>
+            <element name="id" type="nonNegativeInteger"/>
+            <element name="name" type="string"/>
+            <element name="color" type="nbd:Colors"/>
+<!-- okay so these elements are technically optional, however i figured having them set to default would be cleaner -->
+            <element name = "icon" type="nbd:Icons" />
+            <element name = "invisible" type="boolean" />
+            <element name="size" type="nbd:GrainSize"/>
+            <element name="description" type="string"/>
+            <element name="halfLife" type="nonNegativeInteger"/>
+            <element name="movementProbability" type="nbd:Percentage"/>
+            <element name="allowedDirections" type="nbd:Directions" minOccurs="0" maxOccurs="8"/>
+        </sequence>
+        
+        <!-- attributes: optional by default so i'm using them for field dependent settings -->
+        <attribute name="fieldProductions" type="nbd:Pairs"/>
+        <attribute name="fieldInfluence" type="nbd:Pairs"/>
+        <attribute name="fieldPermeable" type="nbd:Percentage"/>
+    </complexType>
+    
+    <complexType name="Behaviours">
+        <!-- TO DO -->
+    </complexType>
+    
+    <complexType name="Fields">
+        <!-- TO DO -->
+    </complexType>
+    
+    <complexType name="Pairs">
+        <!-- TO DO -->
+    </complexType>
+    
+    <!-- ######################### Simple types ######################## -->
+    <simpleType name="Percentage">
+        <restriction base="string">
+            <pattern value="I DONT KNOW YET"/> 
+            <!-- gotta figure this out, a number between 0 and 1 with up to 8 digits  after the comma -->
+            <!-- could be seen as a number between 0 and 0.999999999 ? and then add 1 as another possible value? idk -->
+        </restriction>
+    </simpleType>
+    
+    <simpleType name="Directions" final="restriction">
+        <restriction base="string">
+            <enumeration value="Left"/>
+            <enumeration value="Up"/>
+            <enumeration value="Right"/>
+            <enumeration value="Down"/>
+            <enumeration value="LeftUp"/>
+            <enumeration value="RightUp"/>
+            <enumeration value="RightDown"/>
+            <enumeration value="LeftDown"/>
+        </restriction>
+    </simpleType>
+    
+    
+    
+</schema>
