@@ -30,6 +30,7 @@ Second and third options added are the **field prductions** and **fieldInfluence
 Fields themselves are optional, available when expert mode is toggled on. Similar to grains, the first id: 0 doesn't necessarily appear but can be added manually.
 Each field has an **id**, a **name** and a **color**.
 Optionally, they can also have a list of **allowedDirection**, a **speed** (between 0 and 1) and a **halfLife** (int >0).
+Finally, it is possible to add a **formula** which follows certain constraints.
 
 # Simulation
 The simulation must contain a **name** and a **description**, even if they're empty.\

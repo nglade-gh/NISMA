@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.univ-grenoble-alpes.fr/trajSim"
+           xmlns:traj="http://www.univ-grenoble-alpes.fr/trajSim"
+           elementFormDefault="qualified">
+    <!-- element racine-->
+    <element name="pos" type="traj:Coordinate"/>
+    
+    <!-- i have nth to add i just wanted to separate the code with a comment -->
+    <complexType name="Coordinate">
+        <sequence>
+            <element name="X" type="double"/>
+            <element name="Y" type="double"/>
+        </sequence>
+    </complexType>
+  
+
+
+
+</schema>

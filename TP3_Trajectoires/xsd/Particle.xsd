@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.univ-grenoble-alpes.fr/trajSim"
+           xmlns:traj="http://www.univ-grenoble-alpes.fr/trajSim"
+           elementFormDefault="qualified">
+    <!-- imports -->
+    <include schemaLocation="BoundingBox.xsd"/>
+    <include schemaLocation="Coordinate.xsd"/>
+    
+    <!-- racine -->
+    <element name="Particle" type="traj:ParticleType"/>
+    
+    <!-- particle type: extends bb -->
+    <complexType name="ParticleType">
+        <complexContent>
+            <restriction base="traj:boundingBoxType">
+                <sequence>
+                    <element name="velocity" type="traj:Coordinate" minOccurs="0"/>
+                    <element name="color" type="string" minOccurs="0"/>
+                </sequence>
+                <attribute name="id" type="nonNegativeInteger" use="required"/>
+            </restriction>
+        </complexContent>
+    </complexType>
+</schema>
