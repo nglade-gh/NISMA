@@ -3,25 +3,16 @@
   {
     "grains":
     [{
-      "name":"Agent",
+      "id":0,
       "color":"LightPink",
-      "movementProbability":0.5,
+      "name":"Agent_toto",
+    
+      "movementProbability":0,
       "allowedDirection":
-        [
-          "Left","Up","Right","Down","RightDown","LeftDown","LeftUp","RightUp"
-        ],
+        [],
       "fieldProductions":
-        {
-          "0":0.7,
-          "1":-0.6,
-          "2":0.55
-        },
-      "fieldInfluences":
-        {
-          "0":0.55,
-          "1":-0.25,
-          "2":-0.4
-        }
+        {}
+
     }
     ,
       {
@@ -62,7 +53,7 @@
             "productId":1,
             "allowedDirection":
               [
-                "Left","Up","Right","Down","LeftUp","RightUp","RightDown","LeftDown"
+                "Left","Up","LeftDown","Right","Down","LeftUp","RightUp","RightDown"
               ]
           }]
       }
@@ -98,31 +89,7 @@
         }],
     
     "fields":
-      [{
-        "name":"Field",
-        "color":"Green",
-        "speed":1,
-        "halfLife":10000,
-        "formula":"sin(x/10)"
-      }
-      ,
-        {
-          "id":1,
-          "name":"Field 1",
-          "color":"MediumSpringGreen",
-          "speed":0.7,
-          "halfLife":100
-        }
-      ,
-        {
-          "id":2,
-          "name":"Field 2",
-          "color":"Crimson",
-          "speed":1,
-          "halfLife":1,
-          "formula":"cos(y*2)"
-        }
-      ]
+      []
   },
   
   "simulation":

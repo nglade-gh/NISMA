@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.univ-grenoble-alpes.fr/trajSim"
+           xmlns:traj="http://www.univ-grenoble-alpes.fr/trajSim"
+           elementFormDefault="qualified">
+    
+    <!-- import coordinate -->
+    <include schemaLocation="Coordinate.xsd"/>
+    
+    <!-- elements racine and stuff -->
+    <element name="boundingBox" type="traj:boundingBoxType"/>
+    
+    <!-- bb type -->
+    
+    <complexType name="boundingBoxType">
+        <sequence>
+            <element name="pos" type="traj:Coordinate"/>
+            <element name="dimensions" type="traj:Coordinate"/>
+        </sequence>
+        <attribute name="centered" type="boolean"/>
+    </complexType>
+    
+</schema>

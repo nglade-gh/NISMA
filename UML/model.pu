@@ -20,7 +20,7 @@
         -allowedDirection: directions[]
         *fieldProductions: pairs[]
         *fieldInfluence: pairs[]
-        *fieldPermeable: pairs[]
+        *fieldPermeable: percentage_value
         
     }
     
@@ -28,7 +28,7 @@
         +name: String
         *fieldPredicates : TO BE FINISHED
         +probability: percentage_value
-        -agePredicate: age_pred
+        -agePredicate: int
         +mainReactiveId: int
         -mainProductId: int
         -sourceReactive: int
@@ -45,6 +45,7 @@
         allowedDirections: direction[]
         speed: percentage_value
         halfLife: int
+	formula: formulae
     }
    
    
@@ -98,6 +99,11 @@
         op: operator
         constant: int
    }
+   class formulae{
+	restrictions
+	to be added
+	op/ operators
+	}
 
     'Relations entre classes
     Model *-- Grains
@@ -113,6 +119,7 @@
     
     pairs  *-- percentage_value_neg
     react *-- operators
+    formulae *--operators
     
     Behaviours *-- directions
     Behaviours *-- percentage_value
@@ -121,4 +128,5 @@
     Fields *-- directions
     Fields *-- percentage_value
     Fields *-- color_list
+    Fields *-- formulae
 @enduml

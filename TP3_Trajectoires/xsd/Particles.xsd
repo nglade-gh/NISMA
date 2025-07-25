@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+        targetNamespace="http://www.univ-grenoble-alpes.fr/trajSim"
+        xmlns:traj="http://www.univ-grenoble-alpes.fr/trajSim"
+        elementFormDefault="qualified">
+    <!-- imports -->
+    <include schemaLocation="Particle.xsd"/>
+
+    <!-- racine -->
+    <element name="particles" type="traj:ParticlesType"/>
+
+    <!-- Type Particles -->
+    <complexType name="ParticlesType">
+        <sequence>
+            <element name="particle" type="traj:ParticleType" maxOccurs="unbounded"/>
+        </sequence>
+        <attribute name="count" type="nonNegativeInteger" use="optional"/>
+    </complexType>
+    
+</schema>

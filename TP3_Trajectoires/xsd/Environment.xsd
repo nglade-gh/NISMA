@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schema xmlns="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.univ-grenoble-alpes.fr/trajSim"
+           xmlns:traj="http://www.univ-grenoble-alpes.fr/trajSim"
+           elementFormDefault="qualified">
+    
+    <!-- imports -->
+    <include schemaLocation="Coordinate.xsd"/>
+    <include schemaLocation="BoundingBox.xsd"/>
+    
+    <!--element racine -->
+    <element name="environment" type="traj:EnvironmentType"/>
+    
+    <!-- type def -->
+    <complexType name="EnvironmentType">
+        <complexContent>
+            <restriction base="traj:boundingBoxType">
+                <sequence>
+                    <element name="gridStep" type="traj:Coordinate"/>
+                </sequence>
+                <attribute name="periodic" type="boolean" use="required"/>
+            </restriction>
+        </complexContent>
+    </complexType>
+</schema>

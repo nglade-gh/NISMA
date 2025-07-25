@@ -35,23 +35,64 @@
             <element name="halfLife" type="nonNegativeInteger"/>
             <element name="movementProbability" type="nbd:Percentage"/>
             <element name="allowedDirections" type="nbd:Directions" minOccurs="0" maxOccurs="8"/>
+<!-- field dependent settings -->
+            <element name="fieldProductions" type="nbd:Pairs" minOccurs="0" maxOccurs="unbounded"/>
+            <element name="fieldInfluence" type="nbd:Pairs" minOccurs="0" maxOccurs="unbounded"/>
+            <element name="fieldPermeable" type="nbd:Pairs" minOccurs="0" maxOccurs="unbounded"/>
         </sequence>
         
         <!-- attributes: optional by default so i'm using them for field dependent settings -->
-        <attribute name="fieldProductions" type="nbd:Pairs"/>
+        <!-- WELL THIS IS STUPID BCZ ATTRIBUTES OCCUR 0 TO 1 TIMES BUT U CAN DEFINITELY HAVE SO MANY FIELDS AAAAAA -->
+        <!-- <attribute name="fieldProductions" type="nbd:Pairs"/>
         <attribute name="fieldInfluence" type="nbd:Pairs"/>
-        <attribute name="fieldPermeable" type="nbd:Pairs"/>
+        <attribute name="fieldPermeable" type="nbd:Pairs"/> -->
     </complexType>
     
     <complexType name="Behaviours">
-        <!-- TO DO -->
+        <sequence>
+            <element name="name" type="string"/>
+            <!-- <element name="fieldPredicates" type="unfinished" minOccurs="0" maxOccurs="unbounded"/> -->
+            <element name="probability" type="nbd:Percentage"/>
+            <element name="agePredicate" type="nonNegativeInteger" minOccurs="0" maxOccurs="1"/>
+            <element name="mainReactiveId" type="nonNegativeInteger"/>
+            <element name="mainProdcutId" type="nonNegativeInteger" minOccurs="0" maxOccurs="unbounded"/>
+            <element name="sourceReactive" type="nonNegativeInteger" minOccurs="0" maxOccurs="unbounded"/>
+            <element name="reaction" type="nbd:react"  minOccurs="0" maxOccurs="1"/>
+            <element name="allowedDirections" type="nbd:Directions" minOccurs="0" maxOccurs="8"/>
+            <element name="fieldProduction" type="nbd:Percentage" minOccurs="0" maxOccurs="unbounded"/>
+            <element name="sourfieldInfluences" type="nbd:Percentage" minOccurs="0" maxOccurs="unbounded"/>
+
+        </sequence>
     </complexType>
     
     <complexType name="Fields">
-        <!-- TO DO -->
+        <sequence> 
+            <element name="id" type="nonNegativeInteger"/>
+            <element name="name" type="string"/>
+            <element name="color" type="nbd:Colors"/>
+            <element name="allowedDirection" type="nbd:Directions" minOccurs="0" maxOccurs="8"/>
+            <element name="speed" type="nbd:Percentage"/>
+            <element name="halfLife" type="nonNegativeInteger"/>
+            <element name="formula" type="nbd:Formulae" minOccurs="0" maxOccurs="1"/>
+        </sequence>
+    </complexType>
+    <!-- ######################### Secondary complex types ######################## -->
+
+    <complexType name="Pairs">
+        <sequence>
+                <element name="id" type="nonNegativeInteger"/>
+                <element name="value" type="nbd:PercentageNeg"/>
+        </sequence>
     </complexType>
     
-    <complexType name="Pairs">
+    <complexType name="react">
+        <sequence>
+            <element name="op" type="nbd:operator"/>
+            <element name="constant" type="nonNegativeInteger"/>
+        </sequence>
+    </complexType>
+    
+    <complexType name="Formulae">
         <!-- TO DO -->
     </complexType>
     
@@ -64,6 +105,12 @@
         </restriction>
     </simpleType>
     
+    <simpleType name="PercentageNeg">
+        <restriction base="string">
+            <pattern value="I ALSO DONT KNOW YET"/>
+        </restriction>
+        <!-- same as percentage but goes from minus one to one -->
+    </simpleType>
     <simpleType name="Directions" final="restriction">
         <restriction base="string">
             <enumeration value="Left"/>
@@ -74,6 +121,54 @@
             <enumeration value="RightUp"/>
             <enumeration value="RightDown"/>
             <enumeration value="LeftDown"/>
+        </restriction>
+    </simpleType>
+    
+    <simpleType name="GrainSize">
+        <restriction base="int">
+            <minInclusive value="0"/>
+            <maxInclusive value="5"/>
+        </restriction>
+        
+    </simpleType>
+    
+    <simpleType name="Colors">
+        <restriction base="string">
+            <!-- just a few examples for the sake of testing -->
+            <!-- full list will probably end up being in a different file for the sake of cleanliness-->
+            <enumeration value="LightPink"/>
+            <enumeration value="Snow"/>
+            <enumeration value="Green"/>
+            <enumeration value="MediumSpringGreen"/>
+            <enumeration value="Crimson"/>
+            <enumeration value="Maroon"/>
+            <enumeration value="White"/>
+            <enumeration value="Gold"/>
+        </restriction>
+    </simpleType>
+    
+    <simpleType name="Icons">
+        <restriction base="string">
+            <!-- same, just a few examples for the sake of testing-->
+            <enumeration value="square"/>
+            <enumeration value="angry"/>
+            <enumeration value="bug"/>
+            <enumeration value="skull-crossbones"/>
+            <enumeration value="skull"/>
+            <enumeration value="baby"/>
+            <enumeration value="cocktail"/>
+            <enumeration value="car-crash"/>
+        </restriction>
+    </simpleType>
+    
+    <simpleType name="operator">
+        <restriction base="string">
+            <enumeration value="Equals"/>
+            <enumeration value="NotEquals"/>
+            <enumeration value="LessThan"/>
+            <enumeration value="LessThanOrEquals"/>
+            <enumeration value="GreaterThan"/>
+            <enumeration value="GreaterThanOrEquals"/>
         </restriction>
     </simpleType>
     
