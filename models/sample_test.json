@@ -1,0 +1,110 @@
+{
+  "name": "Mod\u00E8le de test",
+  "description": "Mod\u00E8le cr\u00E9\u00E9 pour tester la s\u00E9rialisation NISMA",
+  "grains": [
+    {
+      "id": 0,
+      "name": "Agent",
+      "color": "DarkGoldenRod",
+      "icon": "square-full",
+      "invisible": false,
+      "size": 1,
+      "description": "",
+      "halfLife": 0,
+      "movementProbability": 0,
+      "allowedDirections": [
+        "Left",
+        "Up",
+        "Right",
+        "Down"
+      ],
+      "fieldProductions": {
+        "0": 1
+      },
+      "fieldInfluences": {
+        "0": 1
+      },
+      "fieldPermeable": {}
+    },
+    {
+      "id": 1,
+      "name": "Agent 1",
+      "color": "Teal",
+      "icon": "square-full",
+      "invisible": false,
+      "size": 1,
+      "description": "",
+      "halfLife": 0,
+      "movementProbability": 0,
+      "allowedDirections": [
+        "Left",
+        "Up",
+        "Right",
+        "Down"
+      ],
+      "fieldProductions": {
+        "0": -0.25
+      },
+      "fieldInfluences": {
+        "0": 0.55
+      },
+      "fieldPermeable": {}
+    }
+  ],
+  "behaviours": [
+    {
+      "id": -1,
+      "name": "Cristallisation",
+      "description": "",
+      "probability": 1,
+      "agePredicate": {
+        "op": "GreaterThanOrEquals",
+        "constant": 50
+      },
+      "fieldPredicates": [
+        {
+          "first": 0,
+          "second": {
+            "op": "GreaterThan",
+            "constant": 1E-05
+          }
+        }
+      ],
+      "mainReactiveId": 0,
+      "mainProductId": 1,
+      "sourceReactive": -1,
+      "fieldInfluences": {},
+      "reaction": [
+        {
+          "id": -1,
+          "reactiveId": 0,
+          "productId": 1,
+          "sourceReactive": -1,
+          "allowedDirections": [
+            "Left",
+            "Up",
+            "Right",
+            "Down"
+          ]
+        }
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "id": 0,
+      "name": "Champ",
+      "color": "OrangeRed",
+      "invisible": false,
+      "allowedDirections": [
+        "Left",
+        "Up",
+        "Right",
+        "Down"
+      ],
+      "speed": 0.8,
+      "halfLife": 10,
+      "formula": "(1\u002Bsin(step/25))/2"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>NISMA_Core</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Grain.cs" />
+    <Compile Include="Behaviour.cs" />
+    <Compile Include="Field.cs" />
+    <Compile Include="Simulation.cs" />
+    <Compile Include="JsonUtils.cs" />
+    <Compile Include="sub classes\FieldTools.cs" />
+  </ItemGroup>
+</Project>

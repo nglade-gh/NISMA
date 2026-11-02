@@ -1,0 +1,228 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
+
+namespace NISMA_Core;
+
+/// <summary>
+/// Root model for NetBioDyn serialization/deserialization.
+/// </summary>
+public class NbdModel
+{
+    [JsonPropertyName("model")]
+    public Model Model { get; set; } = new Model();
+
+    [JsonPropertyName("simulation")]
+    public Simulation Simulation { get; set; } = new Simulation();
+
+    [JsonPropertyName("thumbnail")]
+    public JsonNode? Thumbnail { get; set; }
+
+    public NbdModel()
+    {
+    }
+}
+
+/// <summary>
+/// Contains the model definition (grains, behaviours, fields).
+/// </summary>
+public class Model
+{
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("grains")]
+    public List<Grain> Grains { get; set; } = new List<Grain>();
+
+    [JsonPropertyName("behaviours")]
+    public List<Behaviour> Behaviours { get; set; } = new List<Behaviour>();
+
+    [JsonPropertyName("fields")]
+    public List<Field> Fields { get; set; } = new List<Field>();
+
+    public Model()
+    {
+    }
+}
+
+/// <summary>
+/// JSON utilities for NetBioDyn serialization with post-cleanup.
+/// </summary>
+public static class JsonUtils
+{
+    private static readonly JsonSerializerOptions SerializerOptions = new JsonSerializerOptions
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    /// <summary>
+    /// Serialize a model to a NetBioDyn-compatible JSON string, with cleanup of empty/optional fields.
+    /// </summary>
+    public static string SaveNbd(NbdModel model, string referencePath = "")
+    {
+        var json = JsonSerializer.SerializeToNode(model, SerializerOptions);
+        if (json is not JsonObject root) return json!.ToJsonString();
+
+        // Remove thumbnail if present
+        root.Remove("thumbnail");
+
+        // Remove model.name and model.description if present (even if empty)
+        if (root["model"] is JsonObject modelObj)
+        {
+            modelObj.Remove("name");
+            modelObj.Remove("description");
+        }
+
+        // Clean grains
+        if (root["model"]?["grains"] is JsonArray grains)
+        {
+            foreach (var g in grains.OfType<JsonObject>())
+            {
+                CleanOptionalString(g, "description");
+                CleanEmptyArray(g, "allowedDirection");
+                CleanEmptyObject(g, "fieldPermeable");
+                CleanEmptyObject(g, "fieldProductions");
+                CleanEmptyObject(g, "fieldInfluences");
+            }
+        }
+
+        // Clean behaviours
+        if (root["model"]?["behaviours"] is JsonArray behaviours)
+        {
+            foreach (var b in behaviours.OfType<JsonObject>())
+            {
+                CleanOptionalString(b, "description");
+                CleanNullSafe(b, "probability");
+                CleanNullSafe(b, "agePredicate");
+                CleanEmptyArray(b, "fieldPredicates");
+                CleanEmptyObject(b, "fieldInfluences");
+                CleanEmptyArray(b, "reaction");
+
+                // Clean reaction items
+                if (b["reaction"] is JsonArray reactions)
+                {
+                    foreach (var r in reactions.OfType<JsonObject>())
+                    {
+                        CleanNullSafe(r, "reactiveId");
+                        CleanNullSafe(r, "productId");
+                    }
+                }
+
+                // sourceReactive: only remove if < 0 (keep 0)
+                if (b["sourceReactive"] is JsonValue sv && sv.TryGetValue<int>(out var srcVal) && srcVal < 0)
+                {
+                    b.Remove("sourceReactive");
+                }
+
+                // mainProductId: remove if null
+                CleanNullSafe(b, "mainProductId");
+
+                // mainReactiveId: remove if null (but 0 is valid)
+                CleanNullSafe(b, "mainReactiveId");
+            }
+        }
+
+        // Clean fields
+        if (root["model"]?["fields"] is JsonArray fields)
+        {
+            foreach (var f in fields.OfType<JsonObject>())
+            {
+                CleanDefaultInt(f, "id", -1);
+                CleanDefaultBool(f, "invisible", false);
+                CleanEmptyArray(f, "allowedDirection");
+                CleanNull(f, "speed");
+                CleanNull(f, "halfLife");
+                CleanOptionalString(f, "formula");
+            }
+        }
+
+        // Clean simulation
+        if (root["simulation"] is JsonObject sim)
+        {
+            // simulation.name and simulation.description are kept even if empty (reference contains "")
+            CleanNull(sim, "name");
+            CleanNull(sim, "description");
+            CleanDefaultObject(sim, "settings");
+            CleanEmptyArray(sim, "assets");
+
+            if (sim["width"] is JsonValue wv && wv.TryGetValue<int>(out var wv2) && wv2 == 0) sim.Remove("width");
+            if (sim["height"] is JsonValue hv && hv.TryGetValue<int>(out var hv2) && hv2 == 0) sim.Remove("height");
+            if (sim["depth"] is JsonValue dv && dv.TryGetValue<int>(out var dv2) && dv2 == 0) sim.Remove("depth");
+        }
+
+        return root.ToJsonString(SerializerOptions.WriteIndented ? new JsonSerializerOptions { WriteIndented = true } : null);
+    }
+
+    private static void CleanOptionalString(JsonObject obj, string property)
+    {
+        if (obj[property] is JsonValue v && (v.GetValueKind() == JsonValueKind.Null || v.GetValueKind() == JsonValueKind.String && v.GetValue<string>() == string.Empty))
+        {
+            obj.Remove(property);
+        }
+    }
+
+    private static void CleanNull(JsonObject obj, string property)
+    {
+        if (obj[property] is JsonValue v && v.GetValueKind() == JsonValueKind.Null)
+        {
+            obj.Remove(property);
+        }
+    }
+
+    private static void CleanNullSafe(JsonObject obj, string property)
+    {
+        var node = obj[property];
+        if (node is null) return;
+        if (node.GetValueKind() == JsonValueKind.Null)
+        {
+            obj.Remove(property);
+        }
+    }
+
+    private static void CleanEmptyArray(JsonObject obj, string property)
+    {
+        if (obj[property] is JsonArray arr && arr.Count == 0)
+        {
+            obj.Remove(property);
+        }
+    }
+
+    private static void CleanEmptyObject(JsonObject obj, string property)
+    {
+        if (obj[property] is JsonObject jobj && jobj.Count == 0)
+        {
+            obj.Remove(property);
+        }
+    }
+
+    private static void CleanDefaultObject(JsonObject obj, string property)
+    {
+        if (obj[property] is JsonObject jobj && jobj.Count == 0)
+        {
+            obj.Remove(property);
+        }
+    }
+
+    private static void CleanDefaultInt(JsonObject obj, string property, int defaultValue)
+    {
+        if (obj[property] is JsonValue v && v.TryGetValue<int>(out var val) && val == defaultValue)
+        {
+            obj.Remove(property);
+        }
+    }
+
+    private static void CleanDefaultBool(JsonObject obj, string property, bool defaultValue)
+    {
+        if (obj[property] is JsonValue v && v.TryGetValue<bool>(out var val) && val == defaultValue)
+        {
+            obj.Remove(property);
+        }
+    }
+}

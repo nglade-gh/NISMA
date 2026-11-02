@@ -1,0 +1,67 @@
+{
+  "name": "Modèle de test",
+  "description": "Modèle créé pour tester la sérialisation NISMA",
+  "grains": [
+    {
+      "id": 0,
+      "name": "Agent",
+      "color": "DarkGoldenRod",
+      "icon": "square-full",
+      "invisible": false,
+      "size": 1,
+      "description": "",
+      "halfLife": 0,
+      "movementProbability": 0,
+      "allowedDirections": ["Left", "Up", "Right", "Down"],
+      "fieldProductions": { "0": 1 },
+      "fieldInfluences": { "0": 1 },
+      "fieldPermeable": {}
+    },
+    {
+      "id": 1,
+      "name": "Agent 1",
+      "color": "Teal",
+      "icon": "square-full",
+      "invisible": false,
+      "size": 1,
+      "description": "",
+      "halfLife": 0,
+      "movementProbability": 0,
+      "allowedDirections": ["Left", "Up", "Right", "Down"],
+      "fieldProductions": { "0": -0.25 },
+      "fieldInfluences": { "0": 0.55 },
+      "fieldPermeable": {}
+    }
+  ],
+  "behaviours": [
+    {
+      "name": "Cristallisation",
+      "description": "",
+      "probability": 1,
+      "agePredicate": { "op": "GreaterThanOrEquals", "constant": 50 },
+      "fieldPredicates": [ { "first": 0, "second": { "op": "GreaterThan", "constant": 0.00001 } } ],
+      "mainReactiveId": 0,
+      "mainProductId": 1,
+      "sourceReactive": -1,
+      "fieldInfluences": {},
+      "reaction": [ {
+        "reactiveId": 0,
+        "productId": 1,
+        "sourceReactive": -1,
+        "allowedDirections": ["Left", "Up", "Right", "Down"]
+      }]
+    }
+  ],
+  "fields": [
+    {
+      "id": 0,
+      "name": "Champ",
+      "color": "OrangeRed",
+      "invisible": false,
+      "allowedDirections": ["Left", "Up", "Right", "Down"],
+      "speed": 0.8,
+      "halfLife": 10,
+      "formula": "(1+sin(step/25))/2"
+    }
+  ]
+}
