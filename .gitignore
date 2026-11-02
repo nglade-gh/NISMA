@@ -1,0 +1,25 @@
+# Archives de version
+Nisma_Archive_*
+
+# Fichiers de build temporaires
+core.*
+*.o
+*.a
+
+# État du build
+bin/
+obj/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Fichiers temporaires
+*.tmp
+*.bak
+*.swp
+*.DS_Store
+*.nuget
+*.userosscache
+*.sln.docstates
