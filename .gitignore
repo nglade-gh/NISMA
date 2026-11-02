@@ -1,25 +1,62 @@
-# Archives de version
+# =========== NISMA .gitignore ===========
+
+# === Fichiers de version (archives) ===
 Nisma_Archive_*
 
-# Fichiers de build temporaires
-core.*
-*.o
-*.a
-
-# État du build
+# === Build outputs ===
+# Dossiers de build
 bin/
 obj/
+build/
+dist/
+publish/
 
-# IDE
-.idea/
-*.iml
-.vscode/
+# Fichiers de build temporaires
+*.o
+*.a
+*.obj
+*.pdb
+*.dll
+*.exe
+*.runtimeconfig.json
+*.deps.json
+*.log
 
-# Fichiers temporaires
-*.tmp
-*.bak
-*.swp
-*.DS_Store
+# Fichiers de cache
+*.cache
 *.nuget
 *.userosscache
 *.sln.docstates
+*.ojb
+*.user
+
+# Fichiers temporaires créés par le build
+core.*
+
+# === Fichiers de IDE ===
+.idea/
+*.iml
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# === Fichiers de test/JUnit ===
+TEST-*.xml
+TEST-*.html
+.testcafe*
+
+# === Exceptions ===
+# Ne pas ignorer les fichiers .cs, .vb, .fs, .ps1, .sh, .py, .md, .txt, .json, .xml, .yaml, .yml
+# Ces fichiers sont généralement du code source ou des données
+!*.cs
+!*.vb
+!*.fs
+!*.ps1
+!*.sh
+!*.py
+!*.md
+!*.txt
+!*.json
+!*.xml
+!*.yaml
+!*.yml
