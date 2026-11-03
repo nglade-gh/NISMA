@@ -1,132 +1,248 @@
 @startuml
-'Mother ship
-    class Model{
-        +Grains: Grains[]
-        +Behaviours: Behaviours[]
-        +Fields: girl idk
-    }
-    
-'Main classes
-    Class Grains{
-        +id: int
-        +name: String
-        +color: color_list
-        -icon: icon_list
-        -invisible: boolean
-        -size: grain_size
-        -description: String
-        -halfLife: int
-        -movementProbability: percentage_value
-        -allowedDirection: directions[]
-        *fieldProductions: pairs[]
-        *fieldInfluence: pairs[]
-        *fieldPermeable: percentage_value
-        
-    }
-    
-    class Behaviours{
-        +name: String
-        *fieldPredicates : TO BE FINISHED
-        +probability: percentage_value
-        -agePredicate: int
-        +mainReactiveId: int
-        -mainProductId: int
-        -sourceReactive: int
-        -reaction: react
-        -allowedDirection: direction []
-        *fieldProduction: percentage_value
-        *fieldInfluences: percentage_value
-        
-    }
-    class Fields{
-        id:int
-        name: String
-        color: color_list
-        allowedDirections: direction[]
-        speed: percentage_value
-        halfLife: int
-	formula: formulae
-    }
-   
-   
-'sub classes
-    class percentage_value{
-        percentage_value: Number [0-1] 
-    }
-    class percentage_value_neg{
-        percentage_value: Number [(-1)-1] 
-    }
-    class grain_size{
-        Grain_Size : Int [0-5]
-    }
-    class pairs{
-        id: int
-        value: percentage_value
-    }
-    enum directions{
-        "Left"
-        "Up"
-        "Right"
-        "Down"
-        "LeftUp"
-        "RightUp"
-        "RightDown"
-        "LeftDown"
-    }
-   enum icon_list{
-        list
-        of
-        a lot
-        of
-        icons
-   
-   }
-   
-   enum color_list{
-        list
-        of
-        145
-        colours
-   }
-   enum operators{
+'===========================================================
+' NISMA_Core - Architecture complète
+'===========================================================
+
+'--- Classes principales du modèle de simulation ---
+class Grain
+{
+    +int Id
+    +string Name
+    +string Color
+    +string? Icon
+    +float? Size
+    +int? HalfLife
+    +float? MovementProbability
+    +List<string>? AllowedDirection
+    +Dictionary<int, float> FieldProductions
+    +Dictionary<int, float> FieldInfluences
+    +Dictionary<int, float>? FieldPermeable
+    +string? Description
+}
+
+class Behaviour
+{
+    +string Name
+    +float? Probability
+    +int? MainReactiveId
+    +int? MainProductId
+    +int? SourceReactive
+    +Predicate? AgePredicate
+    +List<FieldPredicate>? FieldPredicates
+    +List<Reaction>? Reaction
+    +Dictionary<int, float>? FieldInfluences
+    +string? Description
+}
+
+class Reaction
+{
+    +int? ReactiveId
+    +int? ProductId
+    +List<string>? AllowedDirection
+}
+
+class FieldPredicate
+{
+    +int First
+    +Predicate Second
+}
+
+class Predicate
+{
+    +string Op
+    +float Constant
+}
+
+class Field
+{
+    +int Id
+    +string Name
+    +string Color
+    +bool? Invisible
+    +List<string>? AllowedDirection
+    +float? Speed
+    +int? HalfLife
+    +string? Formula
+}
+
+class Simulation
+{
+    +string? Name
+    +string? Description
+    +SimulationSettings? Settings
+    +int? Width
+    +int? Height
+    +int? Depth
+    +List<int>? Agents
+    +List<Asset3d>? Assets
+}
+
+class SimulationSettings
+{
+    +int Size
+}
+
+class Asset3d
+{
+    +string Name
+    +string Url
+}
+
+class ModelWrapper
+{
+    +GrainModel Model
+    +Simulation Simulation
+    +string Thumbnail
+}
+
+class GrainModel
+{
+    +string Name
+    +string Description
+    +List<Grain> Grains
+    +List<Behaviour> Behaviours
+    +List<Field> Fields
+}
+
+'--- Déclarations de types et comportements génériques ---
+class TypeDecl
+{
+    +string Name
+    +string? Parent
+    +bool IsAbstract
+    +List<string> ChildNames
+}
+
+class BehaviourDecl
+{
+    +string Name
+    +string[] Categories
+    +List<Reaction> Reactions
+}
+
+class MetaModel
+{
+    +List<TypeDecl> Types
+    +List<BehaviourDecl> Behaviours
+}
+
+'--- Relations entre classes ---
+Grain *-- GrainModel
+Behaviour *-- GrainModel
+Field *-- GrainModel
+Simulation *-- SimulationSettings
+Grain *-- Reaction
+Behaviour *-- Reaction
+Behaviour *-- FieldPredicate
+FieldPredicate *-- Predicate
+Field *-- Behaviour
+TypeDecl <|-- Grains
+MetaModel *-- GrainModel
+MetaModel *-- BehaviourDecl
+
+'--- Énumérations et types de base ---
+enum directions
+    "Left"
+    "Up"
+    "Right"
+    "Down"
+    "LeftUp"
+    "RightUp"
+    "RightDown"
+    "LeftDown"
+end
+
+enum icon_list
+    list
+    of
+    a lot
+    of
+    icons
+end
+
+enum color_list
+    list
+    of
+    145
+    colours
+end
+
+enum operators
     GreaterThan
     EqualTo
     SmallerThan
+    GreaterThanOrEquals
+    LessThanOrEquals
+    Equals
+    NotEquals
     etc..
-    }
-   
-   class react{
-        op: operator
-        constant: int
-   }
-   class formulae{
-	restrictions
-	to be added
-	op/ operators
-	}
+end
 
-    'Relations entre classes
-    Model *-- Grains
-    Model *-- Behaviours
-    Model *-- Fields
-    
-    Grains *-- grain_size
-    Grains *-- directions
-    Grains *-- percentage_value
-    Grains *-- pairs
-    Grains *-- color_list
-    Grains *-- icon_list
-    
-    pairs  *-- percentage_value_neg
-    react *-- operators
-    formulae *--operators
-    
-    Behaviours *-- directions
-    Behaviours *-- percentage_value
-    Behaviours *-- react
-    
-    Fields *-- directions
-    Fields *-- percentage_value
-    Fields *-- color_list
-    Fields *-- formulae
+class percentage_value
+{
+    +percentage_value: Number [0-1]
+}
+
+class percentage_value_neg
+{
+    +percentage_value: Number [(-1)-1]
+}
+
+class grain_size
+{
+    +Grain_Size : Int [0-5]
+}
+
+class pairs
+{
+    +int id
+    +percentage_value value
+}
+
+class formulae
+{
+    +restrictions
+    +to be added
+    +op/ operators
+}
+
+note right of Behaviour
+    Properties marked with ? are optional (JsonIgnore WhenWritingDefault)
+    Collections are initialized in constructor.
+end note
+
+note right of Field
+    Properties marked with ? are optional (JsonIgnore WhenWritingDefault)
+    Collections are initialized in constructor.
+end note
+
+note right of Reaction
+    Properties marked with ? are optional (JsonIgnore WhenWritingDefault)
+    Collections are initialized in constructor.
+end note
+
+note right of Behaviour
+    Properties marked with ? are optional (JsonIgnore WhenWritingDefault)
+    Collections are initialized in constructor.
+end note
+
+note right of Field
+    Properties marked with ? are optional (JsonIgnore WhenWritingDefault)
+    Collections are initialized in constructor.
+end note
+
+'--- Association diagrams ---
+Grain o-- Reaction
+Reaction *-- Behaviour
+
+note right of ModelWrapper
+    Root element of the .netbiodyn file.
+    Contains Model, Simulation and Thumbnail.
+end note
+
+note right of GrainModel
+    Root element of the simulation model.
+    Contains grains, behaviours and fields.
+end note
+
 @enduml

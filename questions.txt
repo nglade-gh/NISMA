@@ -1,7 +1,0 @@
-1- if the settings are not absolutely necessary, but they're set to a default value and are only explicitly mentioned in the json file when the default value is changed should i put them as elements or attributes?
-
-personally i think they should be elements bcz in theory if they're there and are just set to the base value it should be fine? will have to test that though
-
-2- should i actually enumerate the types colors and icons (over 100 each) in the xsd or put them in a different file to avoid clutter?
-
-I'm probably gonna avoid the clutter tbh
