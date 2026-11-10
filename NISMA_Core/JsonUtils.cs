@@ -31,11 +31,26 @@ public class NbdModel
 /// </summary>
 public class Model
 {
+    /// <summary>Update plan values for <see cref="UpdatePlan"/>.</summary>
+    public const string ParallelUpdatePlan = "Parallel";
+    public const string SequentialUpdatePlan = "Sequential";
+
     [JsonPropertyName("name")]
     public string? Name { get; set; }
 
     [JsonPropertyName("description")]
     public string? Description { get; set; }
+
+    /// <summary>
+    /// Update plan: "Parallel" (default) or "Sequential".
+    /// Serialized only when it is "Sequential".
+    /// </summary>
+    [JsonPropertyName("updatePlan")]
+    public string? UpdatePlan { get; set; }
+
+    /// <summary>True when the update plan is "Sequential".</summary>
+    [JsonIgnore]
+    public bool IsSequential => UpdatePlan == SequentialUpdatePlan;
 
     [JsonPropertyName("grains")]
     public List<Grain> Grains { get; set; } = new List<Grain>();
@@ -78,6 +93,11 @@ public static class JsonUtils
         {
             modelObj.Remove("name");
             modelObj.Remove("description");
+
+            // updatePlan is kept only when it is "Sequential" (the default is "Parallel")
+            var planNode = modelObj["updatePlan"];
+            var keepPlan = planNode is JsonValue pv && pv.TryGetValue<string>(out var plan) && plan == Model.SequentialUpdatePlan;
+            if (!keepPlan) modelObj.Remove("updatePlan");
         }
 
         // Clean grains

@@ -192,6 +192,20 @@ public class JsonUtils<T>
 
 Utilise `System.Text.Json` avec `[JsonPropertyName]` pour le mapping.
 
+### 4.1bis Champ `updatePlan`
+
+Le modèle porte un plan de mise à jour optionnel, stocké dans `model` après `description`
+et avant `grains` :
+
+| Valeur | Signification | Sérialisation |
+|---|---|---|
+| `"Parallel"` (défaut) | Calculs depuis l'état initial du pas | champ absent |
+| `"Sequential"` | Applications immédiates, ordre aléatoire | `"updatePlan": "Sequential"` |
+
+- Classe : `Model.UpdatePlan` (`NISMA_Core.Model`), constantes `Model.ParallelUpdatePlan`
+  et `Model.SequentialUpdatePlan`, propriété `Model.IsSequential`.
+- `JsonUtils.SaveNbd` retire le champ si sa valeur n'est pas `"Sequential"`.
+
 ### 4.2 XML — `XmlSerializer`
 
 Les classes portent `[Serializable]` et `[XmlRoot(...)]` pour la compatibilité XML.
@@ -206,6 +220,7 @@ Fichier `models/nisma_format.json` :
 {
   "name": "Fourmis",
   "description": "Agent bleus et rouges",
+  "updatePlan": "Sequential",
   "grains": [
     {
       "id": 0,
