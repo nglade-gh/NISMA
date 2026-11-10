@@ -119,6 +119,7 @@ public static class JsonUtils
             foreach (var b in behaviours.OfType<JsonObject>())
             {
                 CleanOptionalString(b, "description");
+                CleanOptionalString(b, "formula");
                 CleanNullSafe(b, "probability");
                 CleanNullSafe(b, "agePredicate");
                 CleanEmptyArray(b, "fieldPredicates");

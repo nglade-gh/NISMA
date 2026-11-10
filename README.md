@@ -143,7 +143,8 @@ NISMA/
 | `name` | `string` | oui | — |
 | `description` | `string` | non | — |
 | `probability` | `double` | non | [0, 1] (par défaut 1) |
-| `agePredicate` | `Predicate` | non | `{op, constant}` |
+| `agePredicate` | `Predicate` | non | `{op, constant}` (conservé pour rétrocompatibilité) |
+| `formula` | `string` | non | formule de condition, ex. `count(0)>=3 && count(0)<5` |
 | `fieldPredicates` | `List<FieldPredicate>` | non | `champId → prédicat` |
 | `mainReactiveId` | `int` | oui | >= 0 |
 | `mainProductId` | `int` | non | >= 0 |

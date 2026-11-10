@@ -97,6 +97,13 @@ public class Behaviour
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public Predicate? AgePredicate { get; set; }
 
+    /// <summary>
+    /// Optional condition formula (e.g. "count(0)&gt;=3 &amp;&amp; count(0)&lt;5").
+    /// Serialized only when not empty.
+    /// </summary>
+    [JsonPropertyName("formula")]
+    public string? Formula { get; set; }
+
     /// <summary>Field predicate conditions for this behaviour. Optional.</summary>
     [JsonPropertyName("fieldPredicates")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
