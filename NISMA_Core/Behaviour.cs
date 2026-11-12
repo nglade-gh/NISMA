@@ -33,6 +33,39 @@ public class Predicate
 }
 
 /// <summary>
+/// Predicate on the number of neighbour agents.
+/// When <see cref="GrainId"/> is negative, the predicate counts any
+/// neighbouring agent (occupied neighbour cells, 8 directions) instead of a
+/// specific grain. All fields are written explicitly when the predicate is
+/// present in the JSON.
+/// </summary>
+public class AgentCountPredicate
+{
+    /// <summary>Grain id to count. Negative = any neighbouring agent.</summary>
+    [JsonPropertyName("grainId")]
+    public int GrainId { get; set; } = -1;
+
+    /// <summary>Comparison operator (e.g. "GreaterThan", "GreaterThanOrEquals").</summary>
+    [JsonPropertyName("op")]
+    public string Op { get; set; } = "GreaterThanOrEquals";
+
+    /// <summary>Number of neighbour agents to compare against.</summary>
+    [JsonPropertyName("count")]
+    public int Count { get; set; }
+
+    public AgentCountPredicate()
+    {
+    }
+
+    public AgentCountPredicate(int grainId, string op, int count)
+    {
+        GrainId = grainId;
+        Op = op;
+        Count = count;
+    }
+}
+
+/// <summary>
 /// Represents a single reaction rule within a behaviour.
 /// </summary>
 public class Reaction
@@ -116,6 +149,14 @@ public class Behaviour
     [JsonPropertyName("fieldPredicates")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<FieldPredicate>? FieldPredicates { get; set; }
+
+    /// <summary>
+    /// "Number of neighbours" predicate conditions. Optional — written only
+    /// when non-empty. Each predicate writes grainId, op and count.
+    /// </summary>
+    [JsonPropertyName("agentCountPredicates")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public List<AgentCountPredicate>? AgentCountPredicates { get; set; }
 
     /// <summary>Reaction rules for this behaviour.</summary>
     [JsonPropertyName("reaction")]

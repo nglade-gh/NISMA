@@ -40,6 +40,19 @@ public class Field
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public int? HalfLife { get; set; }
 
+    /// <summary>
+    /// Toric boundary (wrap-around). Default is true (toric). When false the
+    /// field has an impermeable boundary: it does not diffuse across the grid
+    /// edges (best effort). Optional — written only when false.
+    /// </summary>
+    [JsonPropertyName("toric")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool? Toric { get; set; }
+
+    /// <summary>True when the field boundary is toric (default).</summary>
+    [JsonIgnore]
+    public bool IsToric => Toric ?? true;
+
     /// <summary>Formula defining the field value. Optional.</summary>
     [JsonPropertyName("formula")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]

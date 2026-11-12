@@ -110,6 +110,21 @@ public static class JsonUtils
                 CleanEmptyObject(g, "fieldPermeable");
                 CleanEmptyObject(g, "fieldProductions");
                 CleanEmptyObject(g, "fieldInfluences");
+
+                // boundaryConditions: keep only when the grain is not toric everywhere
+                if (g["boundaryConditions"] is JsonObject bcObj)
+                {
+                    bool allToric = true;
+                    foreach (var wall in new[] { "left", "right", "top", "bottom" })
+                    {
+                        if (bcObj[wall] is not JsonValue wv || !wv.TryGetValue<bool>(out var open) || !open)
+                        {
+                            allToric = false;
+                            break;
+                        }
+                    }
+                    if (allToric) g.Remove("boundaryConditions");
+                }
             }
         }
 
@@ -126,6 +141,7 @@ public static class JsonUtils
                 CleanEmptyArray(b, "fieldPredicates");
                 CleanEmptyObject(b, "fieldInfluences");
                 CleanEmptyArray(b, "reaction");
+                CleanEmptyArray(b, "agentCountPredicates");
 
                 // Clean reaction items
                 if (b["reaction"] is JsonArray reactions)
@@ -158,6 +174,7 @@ public static class JsonUtils
             {
                 CleanDefaultInt(f, "id", -1);
                 CleanDefaultBool(f, "invisible", false);
+                CleanDefaultBool(f, "toric", true);
                 CleanEmptyArray(f, "allowedDirection");
                 CleanNull(f, "speed");
                 CleanNull(f, "halfLife");

@@ -114,6 +114,32 @@ NISMA/
 
 - Types `uint` → `int` pour correspondre au modèle centyllion
 
+### 2.9 Sauvegarde : conditions aux limites et prédicats de count (2026-11-12)
+
+Alignement de NISMA sur les changements de sauvegarde de CentyllionExtend
+(conditions aux limites par grain, champ torique/imperméable, prédicats de
+count sur les voisins) :
+
+- `Grain.cs` : nouvelle classe `BoundaryConditions` (`left/right/top/bottom`,
+  défaut `true`, `IsToric`) + propriété nullable `Grain.BoundaryConditions`
+  + aide `Grain.EffectiveBoundaryConditions`.
+- `Field.cs` : propriété `Toric` (nullable, défaut torique) + aide `IsToric`.
+- `Behaviour.cs` : nouvelle classe `AgentCountPredicate` (`grainId` défaut -1,
+  `op`, `count`) + propriété nullable `Behaviour.AgentCountPredicates`.
+- `JsonUtils.cs` (`SaveNbd`) : nettoyage — `boundaryConditions` supprimé si
+  toutes les parois sont `true`, `toric` supprimé si `true`,
+  `agentCountPredicates` supprimé si vide.
+
+Contrat d'écriture (identique à CentyllionExtend) : `boundaryConditions`
+omis si torique partout, sinon les 4 parois explicites ; `toric` écrit
+seulement si `false` ; `agentCountPredicates` omis si vide, chaque prédicat
+écrit toujours `grainId`/`op`/`count`. Les fichiers legacy à
+`boundaryConditions` partiel restent lisibles (parois absentes = `true`).
+
+Vérification : build de la solution NISMA (0 erreur, 0 avertissement) + test
+console dédié (16/16 assertions : écriture, nettoyage, round-trip, lecture
+legacy). Documentation : README §4.1ter et PROJECT_DOCUMENTATION §2.4.
+
 ---
 
 ## 3. Modèle objet
@@ -135,6 +161,7 @@ NISMA/
 | `fieldProductions` | `Dictionary<int,float>` | non | champ→valeur |
 | `fieldInfluences` | `Dictionary<int,float>` | non | champ→valeur |
 | `fieldPermeable` | `Dictionary<int,float>` | non | champ→valeur |
+| `boundaryConditions` | `BoundaryConditions` | non | `{left,right,top,bottom}` (bool, défaut `true` = torique) ; omis si toutes les parois sont ouvertes |
 
 ### 3.2 `Behaviour` — règle de réaction
 
@@ -151,6 +178,7 @@ NISMA/
 | `sourceReactive` | `int` | non | >= -1 |
 | `fieldInfluences` | `Dictionary<int,float>` | non | champ→valeur |
 | `reaction` | `List<Reaction>` | non | liste de réactions |
+| `agentCountPredicates` | `List<AgentCountPredicate>` | non | omis si vide ; chaque prédicat `{grainId, op, count}` est toujours écrit en entier (cf. §4.1ter) |
 
 ### 3.3 `Field` — structure d'espace
 
@@ -163,6 +191,7 @@ NISMA/
 | `allowedDirections` | `List<string>` | non | 8 directions |
 | `speed` | `float` | non | [0, 1] (par défaut 0.8) |
 | `halfLife` | `int` | non | >= 0 (par défaut 10) |
+| `toric` | `bool` | non | défaut `true` (torique) ; `false` = bordure imperméable ; omis si `true` |
 | `formula` | `string` | non | formule (évaluée dynamiquement) |
 
 ### 3.4 `GrainModel` — modèle de simulation
@@ -206,6 +235,29 @@ et avant `grains` :
 - Classe : `Model.UpdatePlan` (`NISMA_Core.Model`), constantes `Model.ParallelUpdatePlan`
   et `Model.SequentialUpdatePlan`, propriété `Model.IsSequential`.
 - `JsonUtils.SaveNbd` retire le champ si sa valeur n'est pas `"Sequential"`.
+
+### 4.1ter Contrat de sérialisation des champs de bordure et de count (2026-11-12)
+
+Alignement sur le contrat d'écriture de CentyllionExtend (Kotlin
+`@EncodeDefault(ALWAYS)` sur les champs correspondants). Trois nouveaux
+membres :
+
+| JSON | Classe C# | Règle d'écriture | Règle de lecture |
+|---|---|---|---|
+| `grains[].boundaryConditions` | `Grain.BoundaryConditions` (nullable) + classe `BoundaryConditions` (`Left/Right/Top/Bottom`, défaut `true`, `IsToric`) | omis si toutes les parois sont ouvertes ; sinon **les 4 parois sont toujours écrites** | parois absentes = `true` (les fichiers legacy partiels ex. `{"left":false}` restent lisibles) ; `Grain.EffectiveBoundaryConditions` renvoie le défaut torique si nul |
+| `fields[].toric` | `Field.Toric` (nullable) + `Field.IsToric` | omis si `true` ; écrit `false` seulement si imperméable | absent = torique |
+| `behaviours[].agentCountPredicates` | `Behaviour.AgentCountPredicates` (nullable) + classe `AgentCountPredicate` (`GrainId` défaut -1, `Op` défaut `"GreaterThanOrEquals"`, `Count`) | omis si liste vide ; chaque prédicat présent **écrit toujours** `grainId`, `op` et `count` | liste absente = null |
+
+`grainId < 0` sur un prédicat de count = « tout agent voisin occupé »
+(8 directions, bornes 0-8).
+
+`JsonUtils.SaveNbd` applique le nettoyage correspondant : suppression de
+`boundaryConditions` si toutes les parois sont `true`, suppression de
+`toric` si `true`, suppression de `agentCountPredicates` si vide.
+
+Vérifié par test console (16 assertions) : écriture du nouveau format,
+nettoyage, round-trip de (dé)sérialisation et lecture d'un fichier
+legacy CentyllionExtend à `boundaryConditions` partiel.
 
 ### 4.2 XML — `XmlSerializer`
 
@@ -404,4 +456,4 @@ descripteurs de simulation. Il est encore en brouillon et doit être complété.
 ---
 
 *Auteur : étudiante (originelle) + développement par l'assistant.*
-*Dernière mise à jour : 2026-10-31.*
+*Dernière mise à jour : 2026-11-12 — conditions aux limites (`boundaryConditions`, `toric`) et prédicats de count (`agentCountPredicates`) dans le modèle et la sauvegarde.*

@@ -62,6 +62,19 @@ public class Grain
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public Dictionary<int, float>? FieldPermeable { get; set; }
 
+    /// <summary>
+    /// Per-wall boundary conditions for this grain's agents. Optional.
+    /// Written only when the grain is not toric everywhere; when written,
+    /// all four walls are explicit.
+    /// </summary>
+    [JsonPropertyName("boundaryConditions")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public BoundaryConditions? BoundaryConditions { get; set; }
+
+    /// <summary>Effective boundary conditions (toric everywhere when unset).</summary>
+    [JsonIgnore]
+    public BoundaryConditions EffectiveBoundaryConditions => BoundaryConditions ?? new BoundaryConditions();
+
     /// <summary>Description of the grain. Optional.</summary>
     [JsonPropertyName("description")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -77,4 +90,47 @@ public class Grain
         Name = name;
         Color = color;
     }
+}
+
+/// <summary>
+/// Per-wall authorisation for a grain's agents to cross the grid walls
+/// (toric wrap-around). Each flag authorises crossing the corresponding
+/// wall: Left / Right for the vertical walls, Top / Bottom for the
+/// horizontal walls. Default (all true) is toric in all directions.
+/// When the object is present in the JSON, all four walls are written
+/// explicitly; when a grain is toric everywhere the parent omits the
+/// object entirely.
+/// </summary>
+public class BoundaryConditions
+{
+    /// <summary>Authorises crossing the left wall (moving left at x = 0).</summary>
+    [JsonPropertyName("left")]
+    public bool Left { get; set; } = true;
+
+    /// <summary>Authorises crossing the right wall (moving right at x = width-1).</summary>
+    [JsonPropertyName("right")]
+    public bool Right { get; set; } = true;
+
+    /// <summary>Authorises crossing the top wall (moving up at y = 0).</summary>
+    [JsonPropertyName("top")]
+    public bool Top { get; set; } = true;
+
+    /// <summary>Authorises crossing the bottom wall (moving down at y = height-1).</summary>
+    [JsonPropertyName("bottom")]
+    public bool Bottom { get; set; } = true;
+
+    public BoundaryConditions()
+    {
+    }
+
+    public BoundaryConditions(bool left, bool right, bool top, bool bottom)
+    {
+        Left = left;
+        Right = right;
+        Top = top;
+        Bottom = bottom;
+    }
+
+    /// <summary>True when all walls are open (toric everywhere).</summary>
+    public bool IsToric => Left && Right && Top && Bottom;
 }

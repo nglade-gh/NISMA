@@ -7,7 +7,7 @@ simulation importables dans **Centyllion**.
 
 Ce document décrit l'état actuel du code (commenté exhaustivement en XML),
 le schéma `.netbiodyn` (aligné sur le schéma Kotlin `ModelAndSimulation`
-de `centyllion-app`), les 4 exemples, les règles de validation Centyllion,
+de `centyllion-app`), les exemples, les règles de validation Centyllion,
 la méta-modélisation et les contraintes d'import connues.
 
 ---
@@ -21,15 +21,16 @@ NISMA/
 ├── PROJECT_DOCUMENTATION.md       # ← Ce fichier
 ├── models/                        # Fichiers de test (.json, .netbiodyn)
 ├── NISMA_Core/                    # Bibliothèque métier (projet console de démo)
-│   ├── Grain.cs                   # Classe Grain (entité active)
-│   ├── Behaviour.cs               # Classe Behaviour + Predicate/FieldPredicate/Reaction
-│   ├── Field.cs                   # Classe Field (champ / grille)
+│   ├── NISMA_Core.csproj          # Liste explicite des 6 fichiers compilés (cf. §6.7)
+│   ├── Grain.cs                   # Classe Grain (+ classe BoundaryConditions, cf. §2.4)
+│   ├── Behaviour.cs               # Classe Behaviour + Predicate/AgentCountPredicate/FieldPredicate/Reaction
+│   ├── Field.cs                   # Classe Field (champ / grille, propriété toric)
 │   ├── Simulation.cs              # Simulation + SimulationSettings (état initial)
-│   ├── JsonUtils.cs               # Sérialisation .netbiodyn (NbdUtils) + JsonUtils<T>
-│   ├── ModelWrapper.cs            # Wrapper legacy (⚠️ doublon historique, cf. §8)
-│   ├── Program.cs                 # Point d'entrée : 7 tests de démonstration
+│   ├── JsonUtils.cs               # Sérialisation .netbiodyn (NbdModel/Model + JsonUtils.SaveNbd)
+│   ├── ModelWrapper.cs            # Wrapper legacy, non compilé (cf. §6.7)
+│   ├── Program.cs                 # Point d'entrée de démo, non compilé (cf. §6.7)
 │   └── sub classes/
-│       ├── GrainModel.cs          # GrainModel + méta-modélisation (MetaModel/TypeDecl/BehaviourDecl)
+│       ├── GrainModel.cs          # GrainModel + méta-modélisation (non compilé)
 │       ├── FieldTools.cs          # Paires production/influence/perméabilité
 │       └── Database.cs            # Constantes : icônes FontAwesome 5.0.9, couleurs CSS, directions
 └── Exemples/
@@ -82,9 +83,9 @@ classe Kotlin `ModelAndSimulation` (`centyllion-app/core/.../model.kt`) :
 | Propriété | Type | Note |
 |---|---|---|
 | `name` / `description` | `string` | |
-| `grains` | `Grain[]` | id ≥ 0, `color` CSS, `icon` FontAwesome, `size` ∈ [1,5], `halfLife` ≥ 0, `movementProbability` ∈ [0,1], `allowedDirection` (8 directions), `fieldProductions`/`fieldInfluences` ∈ [-1,1] par champ, `fieldPermeable` ∈ [0,1] par champ |
-| `behaviours` | `Behaviour[]` | `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`}, `fieldPredicates`, `reaction[]`, `fieldInfluences`, `formula` (condition optionnelle), `actions` (listes d'actions impératives optionnelles, omises si vides) |
-| `fields` | `Field[]` | `speed` ∈ [0,1], `halfLife` ≥ 0, `formula` (évaluée dynamiquement) |
+| `grains` | `Grain[]` | id ≥ 0, `color` CSS, `icon` FontAwesome, `size` ∈ [1,5], `halfLife` ≥ 0, `movementProbability` ∈ [0,1], `allowedDirection` (8 directions), `fieldProductions`/`fieldInfluences` ∈ [-1,1] par champ, `fieldPermeable` ∈ [0,1] par champ, `boundaryConditions` (parois `left/right/top/bottom`, défaut torique, cf. §2.4) |
+| `behaviours` | `Behaviour[]` | `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`}, `fieldPredicates`, `reaction[]`, `fieldInfluences`, `formula` (condition optionnelle), `actions` (listes d'actions impératives optionnelles, omises si vides), `agentCountPredicates` (prédicats de count sur les voisins, cf. §2.4) |
+| `fields` | `Field[]` | `speed` ∈ [0,1], `halfLife` ≥ 0, `formula` (évaluée dynamiquement), `toric` (défaut `true` = torique, cf. §2.4) |
 
 **`fieldPredicates` — format objet.** Chaque prédicat de champ est sérialisé
 comme un objet `{ "first": <idChamp>, "second": { "op": "…", "constant": n } }`
@@ -115,11 +116,44 @@ construit `Agents` en conséquence, cf. commentaires de section).
 |---|---|---|
 | `fieldPredicates` | sérialisés `{first, second}` via `FieldPredicateConverter` | idem (identiques au cœur) |
 | `Simulation` | constructeur avec `Asset3d` (démo de `ToString`) | mêmes classes, usage direct |
-| `Grain`/`Behaviour` | sans `JsonIgnore` | SimAutoPulse : `[JsonIgnore(Condition = WhenWritingDefault)]` sur les propriétés par défaut |
+| `Grain`/`Behaviour` | `[JsonIgnore(WhenWritingDefault)]` sur les propriétés optionnelles | SimAutoPulse : `[JsonIgnore(Condition = WhenWritingDefault)]` sur les propriétés par défaut |
+
+### 2.4 Contrat de sérialisation des options de bordure et de count (2026-11-12)
+
+Alignement sur le contrat d'écriture de CentyllionExtend (Kotlin
+`@EncodeDefault(EncodeDefault.Mode.ALWAYS)` sur les champs correspondants).
+Règles d'écriture :
+
+| JSON | Règle d'écriture | Règle de lecture (rétrocompatible) |
+|---|---|---|
+| `grains[].boundaryConditions` `{left,right,top,bottom}` | omis si le grain est torique partout ; sinon **les 4 parois sont toujours écrites** explicitement | parois absentes = `true` : un fichier legacy partiel (ex. `{"left":false}`) reste lisible |
+| `fields[].toric` | omis si `true` ; écrit `false` seulement si imperméable | absent = torique |
+| `behaviours[].agentCountPredicates` `[ {grainId,op,count} ]` | omis si liste vide ; chaque prédicat présent **écrit toujours** `grainId`, `op` et `count` (même aux valeurs par défaut) | liste absente = vide |
+
+Sémantique :
+
+- `boundaryConditions` : chaque paroi autorise l'agent à traverser la bordure
+  correspondante (retour torique). Défaut : torique dans les 4 directions.
+  L'asymétrie est autorisée (ex. `left:false, right:true` : un agent du bord
+  gauche ne traverse pas en allant à gauche, un agent du bord droit traverse
+  en allant à droite).
+- `toric` (champ) : `false` = bordure imperméable, la diffusion ne traverse
+  pas les bords de la grille (au mieux, sans solveur numérique dédié).
+- `agentCountPredicates` : prédicat sur le nombre de voisins ; `grainId < 0`
+  compte tout agent voisin occupé (8 directions, valeur 0-8) ; `op` ∈
+  `Equals`, `NotEquals`, `LessThan`, `LessThanOrEquals`, `GreaterThan`,
+  `GreaterThanOrEquals`.
+
+Côté C# : classes `BoundaryConditions` (`Grain.cs`) et `AgentCountPredicate`
+(`Behaviour.cs`), propriétés nullable `Grain.BoundaryConditions`
+(+ `EffectiveBoundaryConditions`), `Field.Toric` (+ `IsToric`),
+`Behaviour.AgentCountPredicates`. `JsonUtils.SaveNbd` applique le nettoyage
+correspondant (suppression si valeur par défaut/vide). Détails complets dans
+README §4.1ter. Vérifié par build de la solution et test console (16/16).
 
 ---
 
-## 3. Les 4 exemples
+## 3. Les exemples
 
 | Exemple | Fichier généré | Caractéristique |
 |---|---|---|
@@ -210,10 +244,13 @@ et le Test 7 de `NISMA_Core/Program.cs`.
    réactif principal est signalé en erreur de validation et le modèle
    n'est pas exécutable.
 6. **`thumbnail`** est optionnel (String, vide par défaut) ; `assets` aussi.
-7. ⚠️ **Doublon historique** : la classe `ModelWrapper` est définie deux fois
-   dans le cœur (`ModelWrapper.cs` et `JsonUtils.cs`) — le projet `NISMA_Core`
-   seul ne compile pas (3 erreurs CS0101/CS0246 préexistantes, indépendantes
-   des commentaires). Les 4 exemples compilent proprement.
+7. ⚠️ **Code legacy exclu de la compilation** : `ModelWrapper.cs` (wrapper
+   historique `nbd.sub_classes`), `Program.cs` (cahier de tests) et
+   `sub classes\GrainModel.cs` (méta-modélisation) ne font pas partie des
+   fichiers compilés par `NISMA_Core.csproj` (`EnableDefaultCompileItems=false`
+   + liste explicite : `Grain.cs`, `Behaviour.cs`, `Field.cs`, `Simulation.cs`,
+   `JsonUtils.cs`, `sub classes\FieldTools.cs`). Le cœur et la solution
+   `NISMA.sln` buildent sans erreur (vérifié le 2026-11-12).
 8. `NISMA_Core/Program.cs` sert de cahier de charges de l'API : certains
    appels volontairement désynchronisés des signatures actuelles (documenté
    dans le commentaire du fichier).
@@ -232,17 +269,19 @@ dotnet build Exemples/SimEco/NISMA_Core/nbd.csproj        # Build succeeded (0 e
 dotnet build Exemples/SimFlux2/NISMA_Core/nbd.csproj     # Build succeeded (0 erreur)
 dotnet build Exemples/SimFlux25Influx/NISMA_Core/nbd.csproj # Build succeeded (0 erreur)
 dotnet build Exemples/SimOndesSpirales/NISMA_Core/nbd.csproj # Build succeeded (0 erreur)
-dotnet build Exemples/SimSimple/NISMA_Core/nbd.csproj    # Build succeeded (0 erreur)
-dotnet build NISMA_Core/nbd.csproj                       # ⚠️ 3 erreurs préexistantes (cf. §6.7)
+dotnet build NISMA_Core/NISMA_Core.csproj              # Build succeeded (0 erreur)
+dotnet build NISMA.sln                                 # Build succeeded (0 erreur)
 ```
 
-Résultat de vérification (après commentaire exhaustif, 31/31 fichiers C#
-vérifiés : suppression des commentaires → code identique byte à byte) :
-**les 4 exemples buildent sans erreur** ; le cœur reste bloqué sur le doublon
-`ModelWrapper` préexistant.
+Résultat de vérification (2026-11-12) : **la solution complète
+(`NISMA.sln`) et le cœur buildent sans erreur ni avertissement**, avec les
+nouvelles propriétés de bordure/count (cf. §2.4) ; les 8 exemples buildent
+également sans erreur.
 
 ---
 
-*Dernière mise à jour : 2026-10-31 — commentaire exhaustif de l'ensemble des
-fichiers C# (cœur + 4 exemples) et alignement sur le schéma `ModelAndSimulation`
-de Centyllion.*
+*Dernière mise à jour : 2026-11-12 — adaptation du modèle et de la
+sauvegarde aux conditions aux limites (`boundaryConditions`, `toric`) et aux
+prédicats de count (`agentCountPredicates`) de CentyllionExtend (cf. §2.4) ;
+vérification du build de la solution ; corrections d'annotations périmées
+(§1, §2.3, §6.7, §7).*
