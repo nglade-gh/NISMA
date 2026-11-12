@@ -104,6 +104,14 @@ public class Behaviour
     [JsonPropertyName("formula")]
     public string? Formula { get; set; }
 
+    /// <summary>
+    /// Optional imperative actions executed when the behaviour is applied
+    /// (e.g. "Add(0, 1, 0), Remove(1, 0, 0), Move(0, 0, 0, 1, 0)").
+    /// Serialized only when not empty.
+    /// </summary>
+    [JsonPropertyName("actions")]
+    public string? Actions { get; set; }
+
     /// <summary>Field predicate conditions for this behaviour. Optional.</summary>
     [JsonPropertyName("fieldPredicates")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]

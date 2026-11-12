@@ -120,6 +120,7 @@ public static class JsonUtils
             {
                 CleanOptionalString(b, "description");
                 CleanOptionalString(b, "formula");
+                CleanOptionalString(b, "actions");
                 CleanNullSafe(b, "probability");
                 CleanNullSafe(b, "agePredicate");
                 CleanEmptyArray(b, "fieldPredicates");
@@ -183,7 +184,11 @@ public static class JsonUtils
 
     private static void CleanOptionalString(JsonObject obj, string property)
     {
-        if (obj[property] is JsonValue v && (v.GetValueKind() == JsonValueKind.Null || v.GetValueKind() == JsonValueKind.String && v.GetValue<string>() == string.Empty))
+        // SerializeToNode stores null properties as explicit null entries, which the
+        // indexer returns as C# null (not a JsonValue), so ContainsKey + null check
+        if (!obj.ContainsKey(property)) return;
+        var node = obj[property];
+        if (node is null || (node is JsonValue v && (v.GetValueKind() == JsonValueKind.Null || v.GetValueKind() == JsonValueKind.String && v.GetValue<string>() == string.Empty)))
         {
             obj.Remove(property);
         }
