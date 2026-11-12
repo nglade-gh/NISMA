@@ -83,7 +83,7 @@ classe Kotlin `ModelAndSimulation` (`centyllion-app/core/.../model.kt`) :
 |---|---|---|
 | `name` / `description` | `string` | |
 | `grains` | `Grain[]` | id ≥ 0, `color` CSS, `icon` FontAwesome, `size` ∈ [1,5], `halfLife` ≥ 0, `movementProbability` ∈ [0,1], `allowedDirection` (8 directions), `fieldProductions`/`fieldInfluences` ∈ [-1,1] par champ, `fieldPermeable` ∈ [0,1] par champ |
-| `behaviours` | `Behaviour[]` | `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`}, `fieldPredicates`, `reaction[]`, `fieldInfluences` |
+| `behaviours` | `Behaviour[]` | `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`}, `fieldPredicates`, `reaction[]`, `fieldInfluences`, `formula` (condition optionnelle), `actions` (listes d'actions impératives optionnelles, omises si vides) |
 | `fields` | `Field[]` | `speed` ∈ [0,1], `halfLife` ≥ 0, `formula` (évaluée dynamiquement) |
 
 **`fieldPredicates` — format objet.** Chaque prédicat de champ est sérialisé
