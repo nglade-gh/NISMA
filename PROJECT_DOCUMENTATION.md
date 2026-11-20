@@ -83,9 +83,9 @@ classe Kotlin `ModelAndSimulation` (`centyllion-app/core/.../model.kt`) :
 | Propriété | Type | Note |
 |---|---|---|
 | `name` / `description` | `string` | |
-| `grains` | `Grain[]` | id ≥ 0, `color` CSS, `icon` FontAwesome, `size` ∈ [1,5], `halfLife` ≥ 0, `movementProbability` ∈ [0,1], `allowedDirection` (8 directions), `fieldProductions`/`fieldInfluences` ∈ [-1,1] par champ, `fieldPermeable` ∈ [0,1] par champ, `boundaryConditions` (parois `left/right/top/bottom`, défaut torique, cf. §2.4) |
-| `behaviours` | `Behaviour[]` | `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`}, `fieldPredicates`, `reaction[]`, `fieldInfluences`, `formula` (condition optionnelle), `actions` (listes d'actions impératives optionnelles, omises si vides), `agentCountPredicates` (prédicats de count sur les voisins, cf. §2.4) |
-| `fields` | `Field[]` | `speed` ∈ [0,1], `halfLife` ≥ 0, `formula` (évaluée dynamiquement), `toric` (défaut `true` = torique, cf. §2.4) |
+| `grains` | `Grain[]` | id ≥ 0, `color` CSS, `icon` FontAwesome, `invisible`, `size` ∈ [1,5], `halfLife` ≥ 0, `movementProbability` ∈ [0,1], `allowedDirection` (8 directions), `fieldProductions`/`fieldInfluences` ∈ [-1,1] par champ, `fieldPermeable` ∈ [0,1] par champ, `boundaryConditions` (parois `left/right/top/bottom`, défaut torique, cf. §2.4) |
+| `behaviours` | `Behaviour[]` | `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`}, `fieldPredicates`, `reaction[]` (chaque réaction : `reactiveId`, `productId`, `allowedDirection`, `sourceReactive` = héritage d'âge, cf. §2.5), `fieldInfluences`, `formula` (condition optionnelle), `actions` (listes d'actions impératives optionnelles, omises si vides), `agentCountPredicates` (prédicats de count sur les voisins, cf. §2.4) |
+| `fields` | `Field[]` | `description`, `speed` ∈ [0,1], `halfLife` ≥ 0, `formula` (évaluée dynamiquement), `toric` (défaut `true` = torique, cf. §2.4) |
 
 **`fieldPredicates` — format objet.** Chaque prédicat de champ est sérialisé
 comme un objet `{ "first": <idChamp>, "second": { "op": "…", "constant": n } }`
@@ -97,6 +97,9 @@ par Centyllion lors de la (dé)sérialisation.
 ### 2.2 `simulation` — l'état initial
 
 - **`settings.size`** : taille d'un côté de la grille.
+- **`settings.showGrid`**, **`settings.gridTextureUrl`**, **`settings.backgroundColor`** :
+  affichage de la grille (booléen, défaut `true`) et décoration ; écrits seulement
+  s'ils diffèrent du défaut.
 - **`agents`** : vecteur plat de `Int` de longueur **`size * size`**
   (contrainte `agentsSize = size * size` de Centyllion). Chaque case vaut
   `-1` (case vide) ou l'**id d'un grain**.
@@ -150,6 +153,43 @@ Côté C# : classes `BoundaryConditions` (`Grain.cs`) et `AgentCountPredicate`
 `Behaviour.AgentCountPredicates`. `JsonUtils.SaveNbd` applique le nettoyage
 correspondant (suppression si valeur par défaut/vide). Détails complets dans
 README §4.1ter. Vérifié par build de la solution et test console (16/16).
+
+---
+
+### 2.5 Contrat de round-trip complet (2026-11-20)
+
+Toute la sauvegarde CentyllionExtend doit survivre à un chargement puis une
+réécriture par NISMA, **quel que soit le mode d'édition** (normal ou expert) :
+la sérialisation porte sur le modèle, pas sur l'interface.
+
+Clés ajoutées au modèle C# pour ne plus les perdre :
+
+| Clé | Type C# | Règle d'écriture |
+|---|---|---|
+| `reaction[].sourceReactive` | `int?` (`Reaction.SourceReactive`) | omis si `< 0` ; `0` conservé (héritage d'âge depuis le réactif principal) |
+| `grains[].invisible` | `bool?` (`Grain.Invisible`) | omis si `false` |
+| `fields[].description` | `string?` (`Field.Description`) | omis si vide |
+| `simulation.settings.{showGrid,gridTextureUrl,backgroundColor}` | `bool?`/`string?` | `showGrid` omis si `true`, chaînes omises si vides |
+| `simulation.assets[].{opacity,x,y,z,xScale,yScale,zScale,xRotation,yRotation,zRotation}` | `double?` | omis si absents (`name` n'est pas écrit par Centyllion) |
+
+Corrections de nettoyage complémentaires : `BoundaryConditions.IsToric` porte
+`[JsonIgnore]` (il était écrit dans le fichier) ; les chaînes vides `color`/`name`
+des grains, comportements et champs et les collections vides
+`model.grains|behaviours|fields` ne sont plus écrites.
+
+**Vérification** : un fichier synthétique produit par le sérialiseur Kotlin
+(tous les prédicats, réactions avec `sourceReactive`, actions, formule,
+`toric`, `boundaryConditions`, `updatePlan` séquentiel, `settings`) est chargé
+par `NISMA_Core`, réécrit par `JsonUtils.SaveNbd`, puis comparé nœud par nœud au
+fichier d'origine : 0 clé perdue, 0 clé ajoutée, 0 valeur modifiée (hors
+`model.name`/`model.description`, supprimés par convention). Le même contrôle
+sur les 44 modèles de `NetBioDyn_Models/` donne le même résultat.
+
+**Compatibilité** : les fichiers anciens (sans ces clés) restent lisibles
+(valeurs par défaut). Les fichiers produits par cette version contiennent des
+clés que `centyllion-app` d'origine refuse (son `Json` par défaut n'active pas
+`ignoreUnknownKeys`) : ils ne sont donc pas chargeables par l'ancienne version,
+ce qui est accepté.
 
 ---
 

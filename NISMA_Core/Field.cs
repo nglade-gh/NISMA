@@ -25,6 +25,11 @@ public class Field
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool? Invisible { get; set; }
 
+    /// <summary>Description of the field. Optional.</summary>
+    [JsonPropertyName("description")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? Description { get; set; }
+
     /// <summary>Allowed diffusion directions for this field. Optional.</summary>
     [JsonPropertyName("allowedDirection")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]

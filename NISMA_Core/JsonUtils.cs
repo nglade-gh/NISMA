@@ -94,6 +94,11 @@ public static class JsonUtils
             modelObj.Remove("name");
             modelObj.Remove("description");
 
+            // empty collections are omitted by Centyllion
+            CleanEmptyArray(modelObj, "grains");
+            CleanEmptyArray(modelObj, "behaviours");
+            CleanEmptyArray(modelObj, "fields");
+
             // updatePlan is kept only when it is "Sequential" (the default is "Parallel")
             var planNode = modelObj["updatePlan"];
             var keepPlan = planNode is JsonValue pv && pv.TryGetValue<string>(out var plan) && plan == Model.SequentialUpdatePlan;
@@ -106,10 +111,13 @@ public static class JsonUtils
             foreach (var g in grains.OfType<JsonObject>())
             {
                 CleanOptionalString(g, "description");
+                CleanOptionalString(g, "color");
+                CleanOptionalString(g, "name");
                 CleanEmptyArray(g, "allowedDirection");
                 CleanEmptyObject(g, "fieldPermeable");
                 CleanEmptyObject(g, "fieldProductions");
                 CleanEmptyObject(g, "fieldInfluences");
+                CleanDefaultBool(g, "invisible", false);
 
                 // boundaryConditions: keep only when the grain is not toric everywhere
                 if (g["boundaryConditions"] is JsonObject bcObj)
@@ -134,6 +142,7 @@ public static class JsonUtils
             foreach (var b in behaviours.OfType<JsonObject>())
             {
                 CleanOptionalString(b, "description");
+                CleanOptionalString(b, "name");
                 CleanOptionalString(b, "formula");
                 CleanOptionalString(b, "actions");
                 CleanNullSafe(b, "probability");
@@ -150,6 +159,13 @@ public static class JsonUtils
                     {
                         CleanNullSafe(r, "reactiveId");
                         CleanNullSafe(r, "productId");
+                        CleanEmptyArray(r, "allowedDirection");
+
+                        // per-reaction age inheritance: only remove if < 0 (keep 0)
+                        if (r["sourceReactive"] is JsonValue rsv && rsv.TryGetValue<int>(out var rsrcVal) && rsrcVal < 0)
+                        {
+                            r.Remove("sourceReactive");
+                        }
                     }
                 }
 
@@ -179,6 +195,9 @@ public static class JsonUtils
                 CleanNull(f, "speed");
                 CleanNull(f, "halfLife");
                 CleanOptionalString(f, "formula");
+                CleanOptionalString(f, "description");
+                CleanOptionalString(f, "color");
+                CleanOptionalString(f, "name");
             }
         }
 
@@ -190,6 +209,24 @@ public static class JsonUtils
             CleanNull(sim, "description");
             CleanDefaultObject(sim, "settings");
             CleanEmptyArray(sim, "assets");
+
+            if (sim["settings"] is JsonObject settings)
+            {
+                CleanDefaultBool(settings, "showGrid", true);
+                CleanDefaultInt(settings, "size", 0);
+                CleanOptionalString(settings, "gridTextureUrl");
+                CleanOptionalString(settings, "backgroundColor");
+            }
+
+            if (sim["assets"] is JsonArray assets)
+            {
+                foreach (var a in assets.OfType<JsonObject>())
+                {
+                    // Centyllion does not write an asset name: do not add one
+                    CleanOptionalString(a, "name");
+                    CleanOptionalString(a, "url");
+                }
+            }
 
             if (sim["width"] is JsonValue wv && wv.TryGetValue<int>(out var wv2) && wv2 == 0) sim.Remove("width");
             if (sim["height"] is JsonValue hv && hv.TryGetValue<int>(out var hv2) && hv2 == 0) sim.Remove("height");

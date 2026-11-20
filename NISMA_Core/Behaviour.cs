@@ -85,6 +85,15 @@ public class Reaction
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<string>? AllowedDirection { get; set; }
 
+    /// <summary>
+    /// Age inheritance for this reaction: the product takes its age from that
+    /// reactive (0 = main reactive, k = k-th reaction, negative = none).
+    /// Optional — written only when not negative, so 0 is preserved.
+    /// </summary>
+    [JsonPropertyName("sourceReactive")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int? SourceReactive { get; set; }
+
     public Reaction()
     {
     }

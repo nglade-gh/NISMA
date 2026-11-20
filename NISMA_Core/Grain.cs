@@ -27,6 +27,11 @@ public class Grain
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Icon { get; set; }
 
+    /// <summary>True when the grain is not drawn in the simulation view. Optional.</summary>
+    [JsonPropertyName("invisible")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool? Invisible { get; set; }
+
     /// <summary>Relative size of the grain icon. Optional.</summary>
     [JsonPropertyName("size")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
@@ -132,5 +137,6 @@ public class BoundaryConditions
     }
 
     /// <summary>True when all walls are open (toric everywhere).</summary>
+    [JsonIgnore]
     public bool IsToric => Left && Right && Top && Bottom;
 }
