@@ -147,6 +147,7 @@ public static class JsonUtils
                 CleanOptionalString(b, "actions");
                 CleanNullSafe(b, "probability");
                 CleanNullSafe(b, "agePredicate");
+                CleanEmptyArray(b, "agePredicates");
                 CleanEmptyArray(b, "fieldPredicates");
                 CleanEmptyObject(b, "fieldInfluences");
                 CleanEmptyArray(b, "reaction");

@@ -140,6 +140,15 @@ public class Behaviour
     public Predicate? AgePredicate { get; set; }
 
     /// <summary>
+    /// Additional "simulation age" predicates, all ANDed with
+    /// <see cref="AgePredicate"/> and with the other graphical predicates.
+    /// Optional — written only when non-empty.
+    /// </summary>
+    [JsonPropertyName("agePredicates")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public List<Predicate>? AgePredicates { get; set; }
+
+    /// <summary>
     /// Optional condition formula (e.g. "count(0)&gt;=3 &amp;&amp; count(0)&lt;5").
     /// Serialized only when not empty.
     /// </summary>

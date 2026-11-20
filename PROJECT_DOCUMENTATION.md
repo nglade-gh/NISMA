@@ -84,7 +84,7 @@ classe Kotlin `ModelAndSimulation` (`centyllion-app/core/.../model.kt`) :
 |---|---|---|
 | `name` / `description` | `string` | |
 | `grains` | `Grain[]` | id ≥ 0, `color` CSS, `icon` FontAwesome, `invisible`, `size` ∈ [1,5], `halfLife` ≥ 0, `movementProbability` ∈ [0,1], `allowedDirection` (8 directions), `fieldProductions`/`fieldInfluences` ∈ [-1,1] par champ, `fieldPermeable` ∈ [0,1] par champ, `boundaryConditions` (parois `left/right/top/bottom`, défaut torique, cf. §2.4) |
-| `behaviours` | `Behaviour[]` | `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`}, `fieldPredicates`, `reaction[]` (chaque réaction : `reactiveId`, `productId`, `allowedDirection`, `sourceReactive` = héritage d'âge, cf. §2.5), `fieldInfluences`, `formula` (condition optionnelle), `actions` (listes d'actions impératives optionnelles, omises si vides), `agentCountPredicates` (prédicats de count sur les voisins, cf. §2.4) |
+| `behaviours` | `Behaviour[]` | `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`} et `agePredicates` (lignes supplémentaires « âge de la simulation », ET entre elles), `fieldPredicates`, `reaction[]` (chaque réaction : `reactiveId`, `productId`, `allowedDirection`, `sourceReactive` = héritage d'âge, cf. §2.5), `fieldInfluences`, `formula` (condition optionnelle), `actions` (listes d'actions impératives optionnelles, omises si vides), `agentCountPredicates` (prédicats de count sur les voisins, cf. §2.4) |
 | `fields` | `Field[]` | `description`, `speed` ∈ [0,1], `halfLife` ≥ 0, `formula` (évaluée dynamiquement), `toric` (défaut `true` = torique, cf. §2.4) |
 
 **`fieldPredicates` — format objet.** Chaque prédicat de champ est sérialisé
@@ -167,6 +167,7 @@ Clés ajoutées au modèle C# pour ne plus les perdre :
 | Clé | Type C# | Règle d'écriture |
 |---|---|---|
 | `reaction[].sourceReactive` | `int?` (`Reaction.SourceReactive`) | omis si `< 0` ; `0` conservé (héritage d'âge depuis le réactif principal) |
+| `behaviours[].agePredicates` | `List<Predicate>?` (`Behaviour.AgePredicates`) | omis si vide ; chaque ligne est un `{op, constant}` comme `agePredicate` (ET avec lui) |
 | `grains[].invisible` | `bool?` (`Grain.Invisible`) | omis si `false` |
 | `fields[].description` | `string?` (`Field.Description`) | omis si vide |
 | `simulation.settings.{showGrid,gridTextureUrl,backgroundColor}` | `bool?`/`string?` | `showGrid` omis si `true`, chaînes omises si vides |
