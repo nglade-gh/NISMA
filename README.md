@@ -171,6 +171,7 @@ legacy). Documentation : README §4.1ter et PROJECT_DOCUMENTATION §2.4.
 | `description` | `string` | non | — |
 | `probability` | `double` | non | [0, 1] (par défaut 1) |
 | `agePredicate` | `Predicate` | non | `{op, constant}` (conservé pour rétrocompatibilité) |
+| `agePredicates` | `List<Predicate>` | non | lignes supplémentaires « âge de la simulation » ; omis si vide ; toutes ET entre elles et avec `agePredicate` |
 | `formula` | `string` | non | formule de condition, ex. `count(0)>=3 && count(0)<5` |
 | `fieldPredicates` | `List<FieldPredicate>` | non | `champId → prédicat` |
 | `mainReactiveId` | `int` | oui | >= 0 |
