@@ -61,6 +61,14 @@ public class Model
     [JsonPropertyName("fields")]
     public List<Field> Fields { get; set; } = new List<Field>();
 
+    /// <summary>
+    /// Simulation modifiers: a condition evaluated once per step, outside any
+    /// cell, plus meta-actions executed when it holds. Optional — the key is
+    /// removed when the list is empty.
+    /// </summary>
+    [JsonPropertyName("modifiers")]
+    public List<SimulationModifier> Modifiers { get; set; } = new List<SimulationModifier>();
+
     public Model()
     {
     }
@@ -98,6 +106,7 @@ public static class JsonUtils
             CleanEmptyArray(modelObj, "grains");
             CleanEmptyArray(modelObj, "behaviours");
             CleanEmptyArray(modelObj, "fields");
+            CleanEmptyArray(modelObj, "modifiers");
 
             // updatePlan is kept only when it is "Sequential" (the default is "Parallel")
             var planNode = modelObj["updatePlan"];
@@ -132,6 +141,24 @@ public static class JsonUtils
                         }
                     }
                     if (allToric) g.Remove("boundaryConditions");
+                }
+            }
+        }
+
+        // Clean simulation modifiers: the empty strings go away, and so do the
+        // values that Centyllion does not write (probability 1, enabled true, id 0)
+        if (root["model"]?["modifiers"] is JsonArray modifiers)
+        {
+            foreach (var m in modifiers.OfType<JsonObject>())
+            {
+                CleanOptionalString(m, "description");
+                CleanOptionalString(m, "formula");
+                CleanOptionalString(m, "actions");
+                CleanDefaultBool(m, "enabled", true);
+                CleanDefaultInt(m, "id", 0);
+                if (m["probability"] is JsonValue pv && pv.TryGetValue<double>(out var probability) && probability == 1.0)
+                {
+                    m.Remove("probability");
                 }
             }
         }

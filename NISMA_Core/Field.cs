@@ -46,6 +46,19 @@ public class Field
     public int? HalfLife { get; set; }
 
     /// <summary>
+    /// Display opacity of the field, 0..100. Optional — written only when it is
+    /// not 100, so the default is omitted. It only affects the drawing: the field
+    /// keeps diffusing the same values.
+    /// </summary>
+    [JsonPropertyName("opacity")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int? Opacity { get; set; }
+
+    /// <summary>Effective opacity of the field (default 100 %).</summary>
+    [JsonIgnore]
+    public int EffectiveOpacity => Opacity ?? 100;
+
+    /// <summary>
     /// Toric boundary (wrap-around). Default is true (toric). When false the
     /// field has an impermeable boundary: it does not diffuse across the grid
     /// edges (best effort). Optional — written only when false.

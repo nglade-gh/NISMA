@@ -114,6 +114,26 @@ public class Behaviour
     [JsonPropertyName("name")]
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Identifier of the behaviour, as displayed in the explorer after its name.
+    /// Optional — omitted when 0. It is what Activate(id) / Inactivate(id) target.
+    /// </summary>
+    [JsonPropertyName("id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int? Id { get; set; }
+
+    /// <summary>
+    /// Activation state of the behaviour. Optional — written only when false, an
+    /// inactive behaviour is never applied while keeping all its settings.
+    /// </summary>
+    [JsonPropertyName("enabled")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool? Enabled { get; set; }
+
+    /// <summary>True when the behaviour is active (default).</summary>
+    [JsonIgnore]
+    public bool IsEnabled => Enabled ?? true;
+
     /// <summary>Probability of this behaviour triggering (0-1). Optional.</summary>
     [JsonPropertyName("probability")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]

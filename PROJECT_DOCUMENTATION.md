@@ -57,13 +57,16 @@ classe Kotlin `ModelAndSimulation` (`centyllion-app/core/.../model.kt`) :
     "description": "…",
     "grains":      [ /* Grain[] */ ],
     "behaviours":  [ /* Behaviour[] */ ],
-    "fields":      [ /* Field[] */ ]
+    "fields":      [ /* Field[] */ ],
+    "modifiers":   [ /* SimulationModifier[] */ ]
   },
   "simulation": {                 // Simulation
     "name": "…",
     "description": "…",
     "settings": {
-      "size": 100,                // taille d'un côté de la grille
+      "size": 100,                // taille d'un côté de la grille (préréglage carré)
+      "customWidth": 0,           // > 0 avec customHeight : grille rectangulaire
+      "customHeight": 0,          // omis quand 0
       "showGrid": true,
       "gridTextureUrl": null,
       "backgroundColor": null
@@ -84,8 +87,9 @@ classe Kotlin `ModelAndSimulation` (`centyllion-app/core/.../model.kt`) :
 |---|---|---|
 | `name` / `description` | `string` | |
 | `grains` | `Grain[]` | id ≥ 0, `color` CSS, `icon` FontAwesome, `invisible`, `size` ∈ [1,5], `halfLife` ≥ 0, `movementProbability` ∈ [0,1], `allowedDirection` (8 directions), `fieldProductions`/`fieldInfluences` ∈ [-1,1] par champ, `fieldPermeable` ∈ [0,1] par champ, `boundaryConditions` (parois `left/right/top/bottom`, défaut torique, cf. §2.4) |
-| `behaviours` | `Behaviour[]` | `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`} et `agePredicates` (lignes supplémentaires « âge de la simulation », ET entre elles), `fieldPredicates`, `reaction[]` (chaque réaction : `reactiveId`, `productId`, `allowedDirection`, `sourceReactive` = héritage d'âge, cf. §2.5), `fieldInfluences`, `formula` (condition optionnelle), `actions` (listes d'actions impératives optionnelles, omises si vides), `agentCountPredicates` (prédicats de count sur les voisins, cf. §2.4) |
-| `fields` | `Field[]` | `description`, `speed` ∈ [0,1], `halfLife` ≥ 0, `formula` (évaluée dynamiquement), `toric` (défaut `true` = torique, cf. §2.4) |
+| `behaviours` | `Behaviour[]` | `id` (affiché `Nom (id)`, cible de `Activate(id)`/`Inactivate(id)`, omis si 0), `enabled` (défaut `true`, écrit seulement si `false`), `mainReactiveId` **obligatoire** (≥ 0), `probability` ∈ [0,1], `agePredicate` {`op`,`constant`} et `agePredicates` (lignes supplémentaires « âge de la simulation », ET entre elles), `fieldPredicates`, `reaction[]` (chaque réaction : `reactiveId`, `productId`, `allowedDirection`, `sourceReactive` = héritage d'âge, cf. §2.5), `fieldInfluences`, `formula` (condition optionnelle), `actions` (listes d'actions impératives optionnelles, omises si vides), `agentCountPredicates` (prédicats de count sur les voisins, cf. §2.4) |
+| `fields` | `Field[]` | `description`, `speed` ∈ [0,1], `halfLife` ≥ 0, `formula` (évaluée dynamiquement), `opacity` ∈ [0,100] (défaut 100, omis à 100 ; n'affecte que l'affichage), `toric` (défaut `true` = torique, cf. §2.4) |
+| `modifiers` | `SimulationModifier[]` | `formula` (condition, évaluée **une fois par pas**, hors case courante), `actions` (méta-actions, cf. §2.6), `probability` ∈ [0,1] (défaut 1), `enabled` (défaut `true`, écrit seulement si `false`), `id` (cible de `Use(id)`/`Unuse(id)`, omis si 0) |
 
 **`fieldPredicates` — format objet.** Chaque prédicat de champ est sérialisé
 comme un objet `{ "first": <idChamp>, "second": { "op": "…", "constant": n } }`
@@ -96,7 +100,11 @@ par Centyllion lors de la (dé)sérialisation.
 
 ### 2.2 `simulation` — l'état initial
 
-- **`settings.size`** : taille d'un côté de la grille.
+- **`settings.size`** : taille d'un côté de la grille (préréglage carré).
+- **`settings.customWidth`** / **`settings.customHeight`** : taille personnalisée,
+  utilisée à la place de `size` quand les deux sont > 0 ; omises quand nulles.
+  `width` / `height` de `simulation` doivent refléter la taille effective
+  (`customWidth`/`customHeight` si elles sont définies, `size` sinon).
 - **`settings.showGrid`**, **`settings.gridTextureUrl`**, **`settings.backgroundColor`** :
   affichage de la grille (booléen, défaut `true`) et décoration ; écrits seulement
   s'ils diffèrent du défaut.
@@ -193,6 +201,45 @@ clés que `centyllion-app` d'origine refuse (son `Json` par défaut n'active pas
 ce qui est accepté.
 
 ---
+
+### 2.6 Modificateurs de simulation et méta-actions (2026-11-23)
+
+Un **modificateur** porte une condition (`formula`) et des **méta-actions**
+(`actions`) agissant sur la simulation entière. Il est évalué **une seule fois
+par pas**, après les comportements, et sa condition est évaluée **hors de toute
+case courante** : on y dispose de `step`, `agent(x, y)`, `age(x, y)`,
+`count(id, x, y)`, `field(id, x, y)` et des fonctions de test
+`IsActive(id)`, `IsInactive(id)`, `IsInUse(id)`, `IsNotInUse(id)` — mais pas de
+`x`, `y`, `z`, ni de `age(n)`, `count(grainId)` ou `field(id)` sans coordonnées.
+
+Méta-actions admises dans `actions` (et **interdites** dans `actions` d'un
+comportement, où le validateur les refuse) :
+
+`pause()`, `Add(id, N)`, `AddRect(id, N, x1, y1, x2, y2)`,
+`AddDisc(id, N, x, y, radius)`, `DrawLine(id, x1, y1, x2, y2)`,
+`EraseRect(x1, y1, x2, y2)`, `EraseDisc(x, y, radius)`,
+`EraseRect(id, x1, y1, x2, y2)`, `EraseDisc(id, x, y, radius)`, `Erase(id)`,
+`Activate(id)` / `Inactivate(id)` (comportements), `Use(id)` / `Unuse(id)`
+(modificateurs).
+
+Sémantique utile pour les exemples : `Add`/`AddRect`/`AddDisc` tirent les
+positions parmi les **cases vides** de la zone (tirage sans remise, au plus N) ;
+une méta-action ne s'exécute qu'**une fois par modificateur et par pas**.
+Exemple complet, au format `.nbd2` :
+
+```json
+"modifiers": [
+  { "name": "Modificateur", "formula": "step == 10",
+    "actions": "AddRect(1, 50, 10, 10, 20, 20), Unuse(0)" }
+]
+```
+
+Ce modificateur ajoute cinquante agents de type 1 dans le rectangle
+(10,10)-(20,20) au pas 10, puis s'éteint lui-même.
+
+**Extension de fichier.** Centyllion enregistre désormais en **`.nbd2`** ; le
+contenu est le même JSON que `.netbiodyn`, que les fichiers historiques restent
+lisibles (bouton « Charger » / « Import »).
 
 ## 3. Les exemples
 

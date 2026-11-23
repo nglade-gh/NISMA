@@ -12,6 +12,23 @@ public class SimulationSettings
     [JsonPropertyName("size")]
     public int Size { get; set; }
 
+    /// <summary>
+    /// Custom width of the grid, used instead of <see cref="Size"/> when both
+    /// custom values are set. Optional — omitted when 0.
+    /// </summary>
+    [JsonPropertyName("customWidth")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int? CustomWidth { get; set; }
+
+    /// <summary>Custom height of the grid. Optional — omitted when 0.</summary>
+    [JsonPropertyName("customHeight")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int? CustomHeight { get; set; }
+
+    /// <summary>True when both custom values are set: the grid is not square.</summary>
+    [JsonIgnore]
+    public bool IsCustomSize => (CustomWidth ?? 0) > 0 && (CustomHeight ?? 0) > 0;
+
     /// <summary>Whether the grid is drawn. Optional (default: true).</summary>
     [JsonPropertyName("showGrid")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
