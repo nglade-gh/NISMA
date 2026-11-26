@@ -8,11 +8,12 @@ public enum Section
     Declare = 1,
     Modifiers = 2,
     Model = 3,
-    Start = 4,
+    Process = 4,
+    Start = 5,
 }
 
 /// <summary>Un objet logique : une puce, ses continuations recollées, et son contexte.</summary>
-public sealed record LogicalItem(int Line, string Text, Section Section, string? Group);
+public sealed record LogicalItem(int Line, string Text, Section Section, string? Group, string? Subject = null);
 
 /// <summary>
 /// Découpe le texte en objets logiques. L'indentation n'a aucune valeur : une puce se
@@ -21,7 +22,7 @@ public sealed record LogicalItem(int Line, string Text, Section Section, string?
 /// </summary>
 public static class Lexer
 {
-    private static readonly string[] SectionNames = { "declare", "modifiers", "model", "start" };
+    private static readonly string[] SectionNames = { "declare", "modifiers", "model", "process", "start" };
 
     public static List<LogicalItem> Read(string text)
     {
@@ -31,6 +32,7 @@ public static class Lexer
         var section = Section.None;
         var order = 0;
         string? group = null;
+        string? process = null;
 
         for (var i = 0; i < lines.Count; i++)
         {
@@ -40,24 +42,35 @@ public static class Lexer
             {
                 var name = line[2..].Trim();
                 if (name.Length == 0) throw new ScriptException(lineNo, "bloc sans nom après ##");
-                if (section != Section.Model)
-                    throw new ScriptException(lineNo, "un bloc ## n'a de sens que dans # model");
+                if (section != Section.Model && section != Section.Process)
+                    throw new ScriptException(lineNo, "un bloc ## n'a de sens que dans # model ou # process");
                 group = name;
+                if (section == Section.Process)
+                    items.Add(new LogicalItem(lineNo, "state", section, name, process));
                 continue;
             }
 
             if (line.StartsWith('#'))
             {
-                var name = line[1..].Trim().ToLowerInvariant();
+                var words = line[1..].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var name = words.Length == 0 ? string.Empty : words[0].ToLowerInvariant();
                 var index = Array.IndexOf(SectionNames, name);
                 if (index < 0)
                     throw new ScriptException(lineNo,
-                        $"section inconnue « {name} » (attendu : declare, modifiers, model, start)");
+                        $"section inconnue « {name} » (attendu : declare, modifiers, model, process, start)");
                 if (index < order)
                     throw new ScriptException(lineNo, $"la section « {name} » est en désordre");
                 order = index;
                 section = (Section)(index + 1);
                 group = null;
+                if (section == Section.Process)
+                {
+                    if (words.Length < 2)
+                        throw new ScriptException(lineNo, "attendu : # process NomDeLAagent");
+                    process = words[1];
+                    items.Add(new LogicalItem(lineNo, "process", section, null, process));
+                }
+
                 continue;
             }
 
@@ -105,7 +118,7 @@ public static class Lexer
                 break;
             }
 
-            items.Add(new LogicalItem(lineNo, sb.ToString().Trim(), section, group));
+            items.Add(new LogicalItem(lineNo, sb.ToString().Trim(), section, group, process));
         }
 
         return items;

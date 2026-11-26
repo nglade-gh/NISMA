@@ -31,6 +31,8 @@ public sealed class Compiler
     };
 
     private readonly Dictionary<string, string> _colors = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _initialState = new(StringComparer.Ordinal);
+    private readonly List<FieldDecl> _fieldDecls = new();
     private readonly HashSet<string> _usedColors = new(StringComparer.Ordinal);
     private Random _colorRandom = new(0);
 
@@ -43,6 +45,9 @@ public sealed class Compiler
         public int Id { get; set; } = -1;
         public Dictionary<string, string> Attributes { get; } = new(StringComparer.OrdinalIgnoreCase);
         public bool IsConcrete => !IsAbstract;
+
+        /// <summary>False pour un agent remplacé par ses états de processus.</summary>
+        public bool Emitted { get; set; } = true;
     }
 
     private readonly Script _script;
@@ -81,7 +86,9 @@ public sealed class Compiler
 
         RegisterDeclarations(model, root);
         AddProductions(root);
+        AddProcessEffects(root);
         AddBehaviours(root);
+        AddProcessBehaviours(root);
         AddStart(model);
         AddModifiers(root);
 
@@ -104,7 +111,6 @@ public sealed class Compiler
         // reproductible, comme les agents de l'état initial
         foreach (var seed in _script.Declarations.OfType<SeedDecl>()) _seed = seed.Seed;
         _colorRandom = new Random(unchecked(_seed * 7919 + 13));
-        AssignColors();
 
         foreach (var decl in _script.Declarations)
         {
@@ -151,16 +157,33 @@ public sealed class Compiler
                     foreach (var (key, value) in agent.Attributes) plain.Attributes[key] = value;
                     _types[agent.Name] = plain;
                     break;
+                case ProcessDecl proc:
+                    if (!_types.TryGetValue(proc.Agent, out var processType))
+                        throw new ScriptException(proc.Line,
+                            $"« {proc.Agent} » n'est pas déclaré : # process porte sur un agent existant");
+                    processType.Emitted = false;
+                    break;
+
+                case StateDecl state:
+                {
+                    var qualified = ProcessNames.Qualified(state.Process, state.Name);
+                    if (_types.ContainsKey(qualified))
+                        throw new ScriptException(state.Line, $"état « {qualified} » déclaré deux fois");
+                    _types[qualified] = new TypeInfo
+                    {
+                        Name = qualified,
+                        Parent = state.Process,
+                        IsAbstract = false,
+                    };
+                    if (!_initialState.ContainsKey(state.Process)) _initialState[state.Process] = qualified;
+                    break;
+                }
+
                 case FieldDecl field:
                     if (_fieldIds.ContainsKey(field.Name))
                         throw new ScriptException(field.Line, $"champ « {field.Name} » déclaré deux fois");
-                    var fieldId = _fieldIds.Count;
-                    _fieldIds[field.Name] = fieldId;
-                    var directions = field.Directions == 4 ? Directions4 : Directions8;
-                    root.Fields.Add(Field.FromPhysical(fieldId, field.Name, _colors[field.Name],
-                        (float)field.Diffusion, field.HalfLife, directions.ToList()));
-                    if (field.Opacity != 100)
-                        root.Fields[^1].Opacity = field.Opacity;
+                    _fieldIds[field.Name] = _fieldIds.Count;
+                    _fieldDecls.Add(field);
                     break;
             }
         }
@@ -173,6 +196,18 @@ public sealed class Compiler
                 throw new ScriptException(0, $"parent inconnu « {info.Parent} » pour « {info.Name} »");
         }
 
+        AssignColors();
+
+        foreach (var field in _fieldDecls)
+        {
+            var fieldId = _fieldIds[field.Name];
+            var directions = field.Directions == 4 ? Directions4 : Directions8;
+            var built = Field.FromPhysical(fieldId, field.Name, _colors[field.Name],
+                (float)field.Diffusion, field.HalfLife, directions.ToList());
+            if (field.Opacity != 100) built.Opacity = field.Opacity;
+            root.Fields.Add(built);
+        }
+
         // identifiants : ordre de déclaration des agents concrets
         var nextId = 0;
         foreach (var decl in _script.Declarations)
@@ -181,10 +216,12 @@ public sealed class Compiler
             {
                 AgentDecl a => a.Name,
                 ConcreteDecl c => c.Name,
+                StateDecl s => ProcessNames.Qualified(s.Process, s.Name),
                 _ => null,
             };
             if (name is null) continue;
             var info = _types[name];
+            if (!info.Emitted) continue; // agent remplacé par ses états
             info.Id = nextId++;
             var grain = new Grain(info.Id, info.Name, _colors[name]);
             ApplyAttributes(grain, info.Attributes);
@@ -221,6 +258,7 @@ public sealed class Compiler
                 AgentDecl agent => (agent.Name, agent.Color),
                 ConcreteDecl concrete => (concrete.Name, concrete.Color),
                 FieldDecl field => (field.Name, field.Color),
+                StateDecl colour => (ProcessNames.Qualified(colour.Process, colour.Name), colour.Color),
                 _ => (null, null),
             };
             if (name is null) continue;
@@ -240,9 +278,21 @@ public sealed class Compiler
                 AgentDecl agent => agent.Name,
                 ConcreteDecl concrete => concrete.Name,
                 FieldDecl field => field.Name,
+                StateDecl naming => ProcessNames.Qualified(naming.Process, naming.Name),
                 _ => null,
             };
             if (name is null || _colors.ContainsKey(name)) continue;
+
+            // le premier état d'un processus reprend la couleur de l'agent, les suivants
+            // en reçoivent une : sans cela, tous les états seraient indiscernables.
+            if (declaration is StateDecl stateDecl && _initialState.TryGetValue(stateDecl.Process, out var initial)
+                && initial == name && _colors.TryGetValue(stateDecl.Process, out var baseColor))
+            {
+                _colors[name] = baseColor;
+                _usedColors.Add(baseColor);
+                continue;
+            }
+
             var color = AvailableColor();
             _colors[name] = color;
             _usedColors.Add(color);
@@ -499,6 +549,154 @@ public sealed class Compiler
         };
     }
 
+
+    // -----------------------------------------------------------------------
+    // Processus : effets et transitions
+    // -----------------------------------------------------------------------
+
+    private void AddProcessEffects(NISMA_Core.Model root)
+    {
+        foreach (var effect in _script.Declarations.OfType<StateEffectDecl>())
+        {
+            var state = ProcessNames.Qualified(effect.Process, effect.State);
+            var grain = _grains.FirstOrDefault(g => g.Name == state)
+                        ?? throw new ScriptException(effect.Line, $"état « {state} » introuvable");
+
+            if (effect.Kind == "moves")
+            {
+                grain.MovementProbability = (float)effect.Value;
+                continue;
+            }
+
+            if (!_fieldIds.TryGetValue(effect.Target, out var fieldId))
+                throw new ScriptException(effect.Line, $"champ « {effect.Target} » inconnu");
+
+            switch (effect.Kind)
+            {
+                case "produces":
+                    grain.FieldProductions[fieldId] = (float)effect.Value;
+                    break;
+                case "absorbs":
+                    grain.FieldInfluences[fieldId] = (float)effect.Value;
+                    break;
+                case "lets":
+                    grain.FieldPermeable ??= new Dictionary<int, float>();
+                    grain.FieldPermeable[fieldId] = (float)effect.Value;
+                    break;
+            }
+        }
+    }
+
+    /// <summary>Complète une condition par la durée de séjour de l'état, puis par « after ».</summary>
+    private static Cond? Guard(Cond? condition, int? stay, int? after)
+    {
+        var parts = new List<Cond>();
+        if (condition is not null) parts.Add(condition);
+        if (stay.HasValue) parts.Add(new MeasureCond("age", ">=", stay.Value, false));
+        if (after.HasValue) parts.Add(new MeasureCond("age", ">=", after.Value, false));
+        return parts.Count switch
+        {
+            0 => null,
+            1 => parts[0],
+            _ => new AndCond(parts),
+        };
+    }
+
+    private void AddProcessBehaviours(NISMA_Core.Model root)
+    {
+        var stays = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var stay in _script.Declarations.OfType<StayDecl>())
+            stays[ProcessNames.Qualified(stay.Process, stay.State)] = stay.Steps;
+
+        var index = root.Behaviours.Count;
+
+        foreach (var transition in _script.Declarations.OfType<TransitionDecl>())
+        {
+            var from = ProcessNames.Qualified(transition.Process, transition.From);
+            if (!_types.TryGetValue(from, out var fromInfo))
+                throw new ScriptException(transition.Line, $"état « {from} » inconnu");
+
+            stays.TryGetValue(from, out var stay);
+            var condition = Guard(transition.Condition, stay == 0 ? null : stay, transition.AfterSteps);
+
+            int? productId = null;
+            string? to = null;
+            if (transition.To is not null)
+            {
+                to = ResolveStateName(transition.Process, transition.To, transition.Line);
+
+                // un produit qui n'est pas un état du processus est autorisé s'il est un
+                // agent concret ; sinon on le signale
+                productId = _types[to].Id;
+            }
+
+            var name = to is null ? $"{Short(from)} dies" : $"{Short(from)} -> {Short(to)}";
+            var behaviour = new Behaviour(name, fromInfo.Id, productId, productId is null ? null : -1)
+            {
+                Id = index == 0 ? null : index,
+            };
+            if (condition is not null) ApplyCondition(behaviour, condition, transition.Line);
+            root.Behaviours.Add(behaviour);
+            index++;
+        }
+
+        foreach (var reaction in _script.Declarations.OfType<StateReactionDecl>())
+        {
+            var from = ProcessNames.Qualified(reaction.Process, reaction.State);
+            if (!_types.TryGetValue(from, out var fromInfo))
+                throw new ScriptException(reaction.Line, $"état « {from} » inconnu");
+
+            stays.TryGetValue(from, out var stay);
+            var condition = Guard(reaction.Condition, stay == 0 ? null : stay, null);
+            var product = ResolveStateName(reaction.Process, reaction.To, reaction.Line);
+            var productId = _types[product].Id;
+
+            var neighbours = ConcreteSet(reaction.Neighbour, reaction.Line);
+            if (neighbours.Count == 0)
+                throw new ScriptException(reaction.Line, $"« {reaction.Neighbour} » ne désigne aucun agent");
+
+            // le réactif principal reste lui-même : sans produit principal, NetBioDyn
+            // supprimerait la cellule. sourceReactive = 0 conserve son âge.
+            var behaviour = new Behaviour($"neighbour {reaction.Neighbour} -> {Short(product)}",
+                fromInfo.Id, fromInfo.Id, 0)
+            {
+                Id = index == 0 ? null : index,
+            };
+            behaviour.Reaction = neighbours
+                .Select(n => new Reaction(n.Id, productId) { SourceReactive = -1 })
+                .ToList();
+            if (condition is not null) ApplyCondition(behaviour, condition, reaction.Line);
+            root.Behaviours.Add(behaviour);
+            index++;
+        }
+
+        foreach (var stay in _script.Declarations.OfType<StayDecl>())
+        {
+            var state = ProcessNames.Qualified(stay.Process, stay.State);
+            var hasExit = _script.Declarations.OfType<TransitionDecl>()
+                .Any(t => t.Process == stay.Process && t.From == stay.State)
+                || _script.Declarations.OfType<StateReactionDecl>()
+                    .Any(r => r.Process == stay.Process && r.State == stay.State);
+            if (!hasExit)
+                _notes.Add($"ligne {stay.Line} : « {state} » déclare une durée sans sortie — la durée ne sert à rien");
+        }
+    }
+
+    /// <summary>« Sick » dans le processus Cell devient « Cell.Sick » ; un agent concret reste tel quel.</summary>
+    private string ResolveStateName(string process, string name, int line)
+    {
+        var qualified = ProcessNames.Qualified(process, name);
+        if (_types.ContainsKey(qualified)) return qualified;
+        if (_types.TryGetValue(name, out var info) && info.IsConcrete && info.Emitted) return name;
+        throw new ScriptException(line, $"« {name} » n'est ni un état de « {process} », ni un agent déclaré");
+    }
+
+    private static string Short(string qualified)
+    {
+        var dot = qualified.IndexOf('.');
+        return dot < 0 ? qualified : qualified[(dot + 1)..];
+    }
+
     // -----------------------------------------------------------------------
     // État initial et modificateurs
     // -----------------------------------------------------------------------
@@ -607,8 +805,10 @@ public sealed class Compiler
     {
         if (_types.TryGetValue(name, out var info))
         {
-            var members = _types.Values.Where(t => t.IsConcrete && DescendsFrom(t, name)).ToList();
-            if (info.IsConcrete) members.Insert(0, info);
+            var members = _types.Values
+                .Where(t => t.IsConcrete && t.Emitted && DescendsFrom(t, name))
+                .ToList();
+            if (info.IsConcrete && info.Emitted) members.Insert(0, info);
             return members;
         }
 
@@ -646,7 +846,13 @@ public sealed class Compiler
     private Grain ConcreteGrain(string name, int line)
     {
         if (_types.TryGetValue(name, out var exact) && exact.IsConcrete)
+        {
+            // un agent remplacé par ses états désigne son état initial
+            if (!exact.Emitted && _initialState.TryGetValue(name, out var initial)) name = initial;
+            else return _grains.First(g => g.Id == exact.Id);
+            exact = _types[name];
             return _grains.First(g => g.Id == exact.Id);
+        }
 
         var set = ConcreteSet(name, line);
         if (set.Count == 0) throw new ScriptException(line, $"« {name} » ne désigne aucun agent concret");

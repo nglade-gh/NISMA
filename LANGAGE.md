@@ -498,3 +498,72 @@ d'emploi. Deux scripts compilent et ont été vérifiés :
   attend son tour.
 - Le niveau mécanique (§14) est spécifié mais pas encore compilé ; c'est lui qui portera
   la garantie de complétude, et son test est la conversion des 44 modèles de référence.
+
+## 17. Processus — proposition en cours d'essai
+
+Un modèle NetBioDyn se lit aujourd'hui comme une liste de transformations. Ce n'est pas
+ainsi qu'un biologiste décrit un phénomène : il raconte un **processus** — une cellule
+passe par des états, y reste un certain temps, agit sur son voisinage, puis en sort.
+
+Le prototype accepte une section `# process` qui décrit exactement cela. Exemple complet,
+compilé et vérifié (`scripts/infection.ni`) :
+
+```
+# process Cell
+## Healthy
+- moves 0.1
+- becomes Infected when finds Virus >= 1
+
+## Infected
+- produces IL2 0.4
+- stays 4 steps
+- becomes Sick
+
+## Sick
+- a neighbour Cell becomes Infected when finds Cell >= 1
+- dies after 6 steps
+```
+
+### Ce que chaque ligne veut dire, et ce qu'elle devient
+
+| Écriture | Sens | `.nbd2` |
+|---|---|---|
+| `## Healthy` | un état du processus | un grain `Cell.Healthy` |
+| `moves 0.1` | l'agent se déplace | `movementProbability` du grain |
+| `produces IL2 0.4` | l'état produit un champ | `fieldProductions` du grain |
+| `becomes X when C` | sortie d'état gardée | comportement, âge remis à zéro |
+| `stays 4 steps` | durée de séjour | `age >= 4` sur les sorties de l'état |
+| `dies after 6 steps` | mort différée | comportement vers la case vide, `age >= 6` |
+| `a neighbour T becomes U` | action sur un voisin | ligne de réaction, âge du voisin remis à zéro |
+
+Trois décisions de compilation, toutes imposées par le moteur :
+
+1. **un état est un grain**. C'est déjà ce que font les modèles NetBioDyn réels
+   (`Axone_A`, `Axone_I`, `Pulse_I` dans Autopulse) : les états y sont des grains, sans le
+   dire. NISMA le dit, et nomme les états `Agent.État`.
+2. **une durée est un âge**. `stays 4 steps` ne demande rien au moteur : il pose
+   `age >= 4` sur les transitions sortantes.
+3. **entrer dans un état remet l'âge à zéro**. C'est `sourceReactive = -1`, qui vaut
+   « aucune inheritance » : le produit naît avec l'âge 0. Sans cela, la durée mesurerait
+   l'âge de la cellule depuis sa création, pas son séjour dans l'état.
+   Pour une action sur un voisin, au contraire, le réactif principal reste lui-même avec
+   `sourceReactive = 0` : la cellule garde son âge, seul le voisin en reçoit un neuf.
+
+### Ce que cette forme apporte, et ce qu'elle ne règle pas
+
+Elle apporte ce qui manquait : le **processus** est visible. On lit « saine, infectée
+pendant 4 pas, malade, meurt après 6 pas » sans reconstituer l'ordre des comportements, et
+les états sont nommés.
+
+Elle ne règle pas :
+
+- **les phases parallèles** dans un même état (faire deux choses à des rythmes différents) ;
+- **la mémoire par agent** (valeur au pas précédent, compteur propre) : le moteur ne
+  connaît que le grain et l'âge ;
+- **les événements** (réveil à une date, file d'échéances) : le temps reste le pas ;
+- **les états qui ne sont pas des grains** : aujourd'hui un état change le grain, donc
+  l'identité de l'agent — un état qui ne devrait rien changer d'autre coûte une
+  transformation.
+
+Ces quatre points sont exactement la frontière entre (A) macro-syntaxe et (B) langage
+autonome décrite dans `docs/revue-langages.md` §22.

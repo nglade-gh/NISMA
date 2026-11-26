@@ -40,6 +40,9 @@ public sealed class Parser
                 case Section.Model:
                     ParseModelItem(item, tokens, script);
                     break;
+                case Section.Process:
+                    ParseProcessItem(item, script);
+                    break;
                 case Section.Start:
                     script.Start.Add(ParseStart(item, tokens));
                     break;
@@ -351,6 +354,122 @@ public sealed class Parser
     }
 
     private readonly Dictionary<string, double> _blockProbabilities = new(StringComparer.Ordinal);
+
+
+    // -----------------------------------------------------------------------
+    // process — états, durées, effets
+    // -----------------------------------------------------------------------
+
+    private void ParseProcessItem(LogicalItem item, Script script)
+    {
+        var line = item.Line;
+
+        if (item.Text == "process")
+        {
+            script.Declarations.Add(new ProcessDecl(line, item.Subject!));
+            return;
+        }
+
+        if (item.Text == "state")
+        {
+            var tokens = Tokenize(line, item.Group!);
+            var name = tokens[0].Text;
+            var index = 1;
+            var color = index < tokens.Count && tokens[index].Is("[")
+                ? ReadColor(tokens, ref index, line)
+                : null;
+            if (index < tokens.Count)
+                throw new ScriptException(line, $"texte inattendu après l'état : « {tokens[index].Text} »");
+            script.Declarations.Add(new StateDecl(line, item.Subject!, name, color));
+            return;
+        }
+
+        var process = item.Subject
+                      ?? throw new ScriptException(line, "règle de processus hors de tout # process");
+        var state = item.Group
+                    ?? throw new ScriptException(line, "une règle de processus doit être dans un ## état");
+
+        var rule = Tokenize(line, item.Text);
+        var head = rule[0];
+
+        if (head.Is("stays"))
+        {
+            var steps = ExpectInt(rule, 1, line);
+            if (rule.Count < 3 || !rule[2].Is("steps"))
+                throw new ScriptException(line, "attendu « steps » après la durée");
+            script.Declarations.Add(new StayDecl(line, process, state, steps));
+            return;
+        }
+
+        if (head.Is("moves"))
+        {
+            var value = ExpectNumber(rule, 1, line);
+            script.Declarations.Add(new StateEffectDecl(line, process, state, "moves", "", value));
+            return;
+        }
+
+        if (head.Is("produces") || head.Is("absorbs") || head.Is("lets"))
+        {
+            var field = ExpectWord(rule, 1, line);
+            var value = ExpectNumber(rule, 2, line);
+            script.Declarations.Add(new StateEffectDecl(line, process, state, head.Text.ToLowerInvariant(), field, value));
+            return;
+        }
+
+        if (head.Is("becomes"))
+        {
+            var target = ExpectWord(rule, 1, line);
+            var condition = ReadTrailingCondition(rule, 2, line);
+            script.Declarations.Add(new TransitionDecl(line, process, state, target, condition, null,
+                TransitionKind.Becomes));
+            return;
+        }
+
+        if (head.Is("dies"))
+        {
+            var index = 1;
+            int? after = null;
+            if (index < rule.Count && rule[index].Is("after"))
+            {
+                after = ExpectInt(rule, index + 1, line);
+                index += 2;
+                if (index < rule.Count && rule[index].Is("steps")) index++;
+            }
+
+            var condition = ReadTrailingCondition(rule, index, line);
+            script.Declarations.Add(new TransitionDecl(line, process, state, null, condition, after,
+                TransitionKind.Dies));
+            return;
+        }
+
+        // a neighbour Cell becomes Infected ...
+        var cursor = 0;
+        if (head.Is("a") && rule.Count > 1 && rule[1].Is("neighbour")) cursor = 2;
+        else if (head.Is("neighbour")) cursor = 1;
+
+        if (cursor > 0)
+        {
+            var neighbour = ExpectWord(rule, cursor, line);
+            if (rule.Count <= cursor + 1 || !rule[cursor + 1].Is("becomes"))
+                throw new ScriptException(line, "attendu « becomes » après le type du voisin");
+            var to = ExpectWord(rule, cursor + 2, line);
+            var condition = ReadTrailingCondition(rule, cursor + 3, line);
+            script.Declarations.Add(new StateReactionDecl(line, process, state, neighbour, to, condition));
+            return;
+        }
+
+        throw new ScriptException(line, $"règle de processus inconnue « {head.Text} »");
+    }
+
+    /// <summary>Lit « when CONDITION » à partir de l'index, ou rien du tout.</summary>
+    private static Cond? ReadTrailingCondition(List<Tok> tokens, int index, int line)
+    {
+        if (index >= tokens.Count) return null;
+        if (!tokens[index].Is("when"))
+            throw new ScriptException(line, $"texte inattendu « {tokens[index].Text} »");
+        var (condition, _) = new ConditionReader(tokens, index + 1, line).ReadOr();
+        return condition;
+    }
 
     // -----------------------------------------------------------------------
     // start

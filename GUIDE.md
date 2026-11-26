@@ -254,6 +254,40 @@ Les modificateurs sont des actions globales, hors de toute cellule :
 `every N steps` devient `step % N == 0`, `at step N` devient `step == N` : le fichier
 produit reste un `.nbd2` ordinaire, sans mécanisme nouveau.
 
+## 7bis. Décrire un processus
+
+Quand un agent traverse des états, la section `# process` remplace avantageusement une
+liste de transformations. On y nomme les états, les durées et les effets :
+
+```
+# process Cell
+## Healthy
+- moves 0.1
+- becomes Infected when finds Virus >= 1
+
+## Infected
+- produces IL2 0.4
+- stays 4 steps
+- becomes Sick
+
+## Sick
+- a neighbour Cell becomes Infected when finds Cell >= 1
+- dies after 6 steps
+```
+
+Trois choses à savoir :
+
+- `Cell` n'est plus un grain : chaque état devient un grain `Cell.Healthy`,
+  `Cell.Infected`, `Cell.Sick`. Le premier état reprend la couleur de l'agent, les autres
+  en reçoivent une pour rester visibles sur la grille.
+- `stays 4 steps` se compile en `age >= 4` sur les sorties de l'état, et l'entrée dans un
+  état remet l'âge à zéro : la durée mesure le séjour, pas la vie de la cellule.
+- dans `# start`, `Cell` désigne le premier état déclaré : `- 800 Cell random` peuple des
+  cellules saines.
+
+CE QUI N'EST PAS ENCORE LÀ : phases parallèles dans un état, mémoire par agent, événements
+datés. Ce sont les limites du moteur, pas celles de la syntaxe.
+
 ## 8. Peupler la grille
 
 ```

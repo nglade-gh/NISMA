@@ -6,7 +6,7 @@
 
   var KEYWORDS = {
     // sections
-    declare: 1, modifiers: 1, model: 1, start: 1,
+    declare: 1, modifiers: 1, model: 1, process: 1, start: 1,
     // déclarations
     grid: 1, update: 1, seed: 1, agent: 1, abstract: 1, tag: 1, field: 1,
     produces: 1, absorbs: 1, lets: 1, with: 1, description: 1,
@@ -18,7 +18,9 @@
     in: 1, near: 1, age: 1, step: 1, at: 1, is: 1, p: 1,
     // modificateurs et actions
     every: 1, steps: 1, everywhere: 1, set: 1, add: 1, pause: 1, capture: 1,
-    stop: 1, activate: 1, deactivate: 1, square: 1, random: 1
+    stop: 1, activate: 1, deactivate: 1, square: 1, random: 1,
+    // processus
+    becomes: 1, stays: 1, moves: 1, after: 1, neighbour: 1
   };
 
   var TOKEN = new RegExp(
