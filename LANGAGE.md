@@ -633,6 +633,18 @@ activations aux pas : [3, 6, 9, 12, 15, 18, 21, 24]
 rythme respecté : activations tous les 3 pas, durée 2 pas
 ```
 
+Un rythme se pose sur une **sortie d'état**, jamais sur un effet. `produces IL2 0.4 every
+3 steps` est refusé, avec la raison et la solution :
+
+```
+erreur : ligne 7: effet « produces » : un effet est permanent, il ne peut pas avoir de
+rythme. Utilisez un modificateur (« every N steps: ... » dans # modifiers)
+```
+
+Un effet d'état est une propriété du grain (production, mobilité, perméabilité) : il n'a
+pas d'occurrence, donc pas de rythme. Ce qui se répète, c'est une transition, une action de
+voisinage, ou une action globale de modificateur.
+
 La différence entre « rythme » et « file d'échéances » est celle-ci : un rythme est une
 **propriété du comportement** (`step % 3 == 0` est évalué pour chaque cellule, indépendamment),
 une file est un **objet partagé** dont l'état est l'ordre des dates. Le premier se traduit

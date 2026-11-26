@@ -80,6 +80,7 @@ public sealed class Parser
             var w = ExpectInt(tokens, 1, line);
             var h = tokens.Count > 2 ? ExpectInt(tokens, 2, line) : w;
             if (w <= 0 || h <= 0) throw new ScriptException(line, "taille de grille invalide");
+            EnsureEnd(tokens, tokens.Count > 2 ? 3 : 2, line, "grille");
             return new GridDecl(line, w, h);
         }
 
@@ -94,7 +95,12 @@ public sealed class Parser
             };
         }
 
-        if (head.Is("seed")) return new SeedDecl(line, ExpectInt(tokens, 1, line));
+        if (head.Is("seed"))
+        {
+            var seed = ExpectInt(tokens, 1, line);
+            EnsureEnd(tokens, 2, line, "graine");
+            return new SeedDecl(line, seed);
+        }
 
         if (head.Is("tag")) return new TagDecl(line, ExpectWord(tokens, 1, line));
 
@@ -397,6 +403,7 @@ public sealed class Parser
             var steps = ExpectInt(rule, 1, line);
             if (rule.Count < 3 || !rule[2].Is("steps"))
                 throw new ScriptException(line, "attendu « steps » après la durée");
+            EnsureEnd(rule, 3, line, "durée de séjour");
             script.Declarations.Add(new StayDecl(line, process, state, steps));
             return;
         }
@@ -404,6 +411,7 @@ public sealed class Parser
         if (head.Is("moves"))
         {
             var value = ExpectNumber(rule, 1, line);
+            EnsureEnd(rule, 2, line, "mobilité");
             script.Declarations.Add(new StateEffectDecl(line, process, state, "moves", "", value));
             return;
         }
@@ -412,6 +420,7 @@ public sealed class Parser
         {
             var field = ExpectWord(rule, 1, line);
             var value = ExpectNumber(rule, 2, line);
+            EnsureEnd(rule, 3, line, $"effet « {head.Text.ToLowerInvariant()} »");
             script.Declarations.Add(new StateEffectDecl(line, process, state, head.Text.ToLowerInvariant(), field, value));
             return;
         }
@@ -420,7 +429,8 @@ public sealed class Parser
         {
             var target = ExpectWord(rule, 1, line);
             var (period, nextToken) = ReadPeriod(rule, 2, line);
-            var condition = ReadTrailingCondition(rule, nextToken, line);
+            var (condition, end) = ReadTrailingCondition(rule, nextToken, line);
+            EnsureEnd(rule, end, line, "sortie d'état");
             script.Declarations.Add(new TransitionDecl(line, process, state, target, condition, null,
                 TransitionKind.Becomes, period));
             return;
@@ -437,7 +447,8 @@ public sealed class Parser
                 if (index < rule.Count && rule[index].Is("steps")) index++;
             }
 
-            var condition = ReadTrailingCondition(rule, index, line);
+            var (condition, end) = ReadTrailingCondition(rule, index, line);
+            EnsureEnd(rule, end, line, "sortie d'état");
             script.Declarations.Add(new TransitionDecl(line, process, state, null, condition, after,
                 TransitionKind.Dies));
             return;
@@ -455,10 +466,21 @@ public sealed class Parser
                 throw new ScriptException(line, "attendu « becomes » après le type du voisin");
             var to = ExpectWord(rule, cursor + 2, line);
             var (period, next) = ReadPeriod(rule, cursor + 3, line);
-            var condition = ReadTrailingCondition(rule, next, line);
+            var (condition, end) = ReadTrailingCondition(rule, next, line);
+            EnsureEnd(rule, end, line, "action de voisinage");
             script.Declarations.Add(new StateReactionDecl(line, process, state, neighbour, to, condition, period));
             return;
         }
+
+        if (head.Is("remembers") || head.Is("remembersValue"))
+            throw new ScriptException(line,
+                "la mémoire par agent n'existe pas dans .nbd2 : une cellule ne connaît que son grain et son âge");
+        if (head.Is("waits") || head.Is("await"))
+            throw new ScriptException(line,
+                "une attente d'événement n'existe pas dans .nbd2 : le moteur avance par pas, sans file d'échéances");
+        if (head.Is("parallel") || head.Is("simultaneously"))
+            throw new ScriptException(line,
+                "deux rythmes dans un même état ne sont pas exprimables : découpez l'état, ou passez par un modificateur");
 
         throw new ScriptException(line, $"règle de processus inconnue « {head.Text} »");
     }
@@ -475,13 +497,25 @@ public sealed class Parser
     }
 
     /// <summary>Lit « when CONDITION » à partir de l'index, ou rien du tout.</summary>
-    private static Cond? ReadTrailingCondition(List<Tok> tokens, int index, int line)
+    private static (Cond? Condition, int Next) ReadTrailingCondition(List<Tok> tokens, int index, int line)
     {
-        if (index >= tokens.Count) return null;
+        if (index >= tokens.Count) return (null, index);
         if (!tokens[index].Is("when"))
             throw new ScriptException(line, $"texte inattendu « {tokens[index].Text} »");
-        var (condition, _) = new ConditionReader(tokens, index + 1, line).ReadOr();
-        return condition;
+        var (condition, next) = new ConditionReader(tokens, index + 1, line).ReadOr();
+        return (condition, next);
+    }
+
+    /// <summary>Refuse tout ce qui reste : une forme acceptée doit être entièrement lue.</summary>
+    private static void EnsureEnd(List<Tok> tokens, int index, int line, string context)
+    {
+        if (index >= tokens.Count) return;
+        var rest = tokens[index].Text;
+        if (rest == "every")
+            throw new ScriptException(line,
+                $"{context} : un effet est permanent, il ne peut pas avoir de rythme. " +
+                "Utilisez un modificateur (« every N steps: ... » dans # modifiers)");
+        throw new ScriptException(line, $"{context} : texte inattendu « {rest} »");
     }
 
     // -----------------------------------------------------------------------
@@ -497,6 +531,7 @@ public sealed class Parser
             var agent = ExpectWord(tokens, 1, line);
             if (tokens.Count < 3 || !tokens[2].Is("random"))
                 throw new ScriptException(line, "attendu « random » après le nom de l'agent");
+            EnsureEnd(tokens, 3, line, "état initial");
             return new StartRandom(line, count, agent);
         }
 
