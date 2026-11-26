@@ -67,6 +67,24 @@ Conséquence pratique : l'outil peut convertir un `.nbd2` en script mécanique. 
 toujours d'un modèle existant, jamais d'une page blanche, et la conversion est le
 meilleur test de complétude du langage.
 
+## 3ter. Mise en page
+
+**L'indentation est structurelle**, comme en Python : elle délimite les sections et les
+blocs, elle n'est pas décorative.
+
+- Deux espaces par niveau. Les tabulations sont **refusées** — un mélange d'espaces et de
+  tabulations produit des erreurs invisibles à l'œil, et un fichier qu'on ne peut pas
+  relire ne sert à rien.
+- Lignes vides ignorées ; commentaires sur une ligne entière ou en fin de ligne avec `#`.
+- Une section (`declare`, `modifiers`, `model`) est un niveau ; un bloc nommé en est un
+  autre. Rien de plus profond : sans imbrication des blocs, il n'y a jamais plus de deux
+  niveaux dans un fichier.
+- Les continuations de ligne (une règle trop longue) utilisent une indentation
+  supplémentaire, sans changement de sens.
+
+Un rapport d'erreur cite **le numéro de ligne et la colonne d'indentation**, pas la ligne
+du fichier produit : c'est le script que l'on corrige.
+
 ## 4. declare — ce qui existe
 
 ```
