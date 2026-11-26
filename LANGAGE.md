@@ -448,3 +448,41 @@ que le sucre ne change pas la sémantique.
 
 Vingt-cinq lignes utiles : deux grains plus un type abstrait et un tag, un champ, deux
 blocs nommés, une règle multiligne, un modificateur périodique, l'état initial.
+
+## 16. État de l'implémentation
+
+Un prototype du **niveau naturel** vit dans `NISMA_Lang/` ; `GUIDE.md` en est le mode
+d'emploi. Deux scripts compilent et ont été vérifiés :
+
+- `scripts/game_of_life.ni` — 2 comportements ; les tables de vérité sont identiques à
+  celles du modèle de référence `GoL Engine.nbd2`, et la grille animée 60 générations par
+  les seuls prédicats produits suit Conway sans divergence ;
+- `scripts/immunity.ni` — type abstrait, tag, champ, blocs ; `Immune -> ActImmune`
+  s'étend en 2 comportements, `Cell -> Debris` en 3 (un agent concret qui a des sous-types
+  désigne aussi ceux-ci).
+
+### Ce que l'implémentation a précisé
+
+1. **`abstract NOM` sans parent** est autorisé : un type racine est utile et le forcer à
+   hériter de quelque chose n'apporte rien.
+2. **Un agent concret peut être le parent d'un type abstrait.** `abstract Immune < Cell`
+   est la formulation naturelle du modèle immunitaire, et rien n'interdit qu'un agent soit
+   à la fois instanciable et général.
+3. **Un nom qui désigne plusieurs agents concrets s'étend** : `Cell -> Debris` produit un
+   comportement par sous-type, et un comptage sur un type devient la somme des comptages
+   (`(count(0)+count(3))<2`). Le compilateur annonce chaque expansion.
+4. **Une règle `neighbour` n'a pas de réactif principal.** L'implémentation a montré qu'il
+   fallait choisir : `neighbour Virus -> Debris` a d'abord produit un comportement dont le
+   réactif principal *et* la ligne de réaction étaient Virus. Le réactif principal est
+   désormais vide — sinon la règle dirait deux choses à la fois.
+5. **Les tags sont résolus avant les agents** : l'ordre de déclaration ne contraint plus
+   l'écriture.
+6. **`every N steps` s'écrit `step % N == 0`** dans le fichier produit : `%` existe dans
+   les formules de Centyllion, donc aucune mécanique nouvelle n'est nécessaire.
+
+### Écarts assumés avec le texte ci-dessus
+
+- `IL2 in near` n'est pas compilé : la formule équivalente existe, la forme naturelle
+  attend son tour.
+- Le niveau mécanique (§14) est spécifié mais pas encore compilé ; c'est lui qui portera
+  la garantie de complétude, et son test est la conversion des 44 modèles de référence.
