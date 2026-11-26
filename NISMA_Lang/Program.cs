@@ -12,13 +12,14 @@ public static class Program
     {
         if (args.Length == 0 || args[0] is "-h" or "--help")
         {
-            Console.WriteLine("usage : nisma <script.ni> [-o sortie.nbd2] [--dump]");
+            Console.WriteLine("usage : nisma <script.ni> [-o sortie.nbd2] [--dump] [--audit]");
             return args.Length == 0 ? 2 : 0;
         }
 
         var input = args[0];
         string? output = null;
         var dump = false;
+        var audit = false;
         for (var i = 1; i < args.Length; i++)
         {
             switch (args[i])
@@ -35,6 +36,9 @@ public static class Program
                     break;
                 case "--dump":
                     dump = true;
+                    break;
+                case "--audit":
+                    audit = true;
                     break;
                 default:
                     Console.Error.WriteLine($"nisma : option inconnue « {args[i]} »");
@@ -55,6 +59,12 @@ public static class Program
             var json = JsonUtils.SaveNbd(result.Model);
 
             foreach (var note in result.Notes) Console.WriteLine("note : " + note);
+
+            if (audit)
+            {
+                Console.WriteLine("traduction :");
+                foreach (var line in result.Audit) Console.WriteLine("  " + line);
+            }
 
             if (output is not null)
             {

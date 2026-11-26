@@ -2,6 +2,41 @@
 
 Proposition de langage, à discuter avant toute implémentation.
 
+## 0. Doctrine
+
+NISMA n'est pas un `.nbd2` en jolie écriture, avec une propriété de dispatch en plus.
+C'est un langage qui décrit des **processus temporo-spatiaux** — des agents qui traversent
+des états, y demeurent, agissent sur leur voisinage — et qui les **réduit** à NetBioDyn.
+
+Deux règles, dont tout le reste découle.
+
+**La temporalité est celle du processus, pas celle de la boucle.** « reste infectée 4 pas »
+est une propriété du phénomène décrit. Que cela devienne `age >= 4` dans le fichier produit
+est un détail de compilation, et le langage n'a pas à en parler. Imposer `step % 4 == 0` à
+un biologiste, c'est lui faire écrire la boucle du moteur à la place de son modèle.
+
+**Aucune forme n'est acceptée sans traduction.** Ce que NetBioDyn ne sait pas porter est
+refusé à la compilation, avec un message qui dit pourquoi et comment l'écrire autrement.
+Jamais d'approximation silencieuse : un modèle qui compile est un modèle dont chaque ligne
+existe dans le `.nbd2`.
+
+Le compilateur tient cette seconde promesse mécaniquement. `nisma script.ni --audit` rend,
+ligne par ligne, ce que chaque déclaration est devenue :
+
+```
+ligne 9 : AgentDecl → agent « Cell » remplacé par ses états
+ligne 20 : StayDecl → garde age >= 4 sur les sorties de « Cell.Infected »
+ligne 21 : TransitionDecl → comportement « Infected -> Sick »
+```
+
+et une déclaration non traduite fait échouer la compilation.
+
+Trois choses sont hors de portée, non par choix mais par cible : les phases parallèles dans
+un état, la mémoire par agent, les événements datés. Le §17 dit ce que la forme `# process`
+en fait ; `docs/revue-langages.md` §22 dit pourquoi c'est la bonne frontière.
+
+---
+
 ## 1. Objectif et non-objectifs
 
 **Objectif** : décrire une simulation complète — agents, champs, comportements, état

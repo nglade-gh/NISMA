@@ -832,3 +832,19 @@ Node-RED, Max/MSP, Pure Data, LabVIEW, Unreal Blueprints, Excel/Resolver.
 - GPSS, résumé du langage (transactions, blocs) : ACM SIGPLAN HOPL
 - clingo / ASP, guide Potassco : potassco.org/guide
 - JetBrains MPS (édition projectionnelle) : jetbrains.com/mps
+
+### Décision retenue
+
+**B par la forme, A par la sémantique.** NISMA décrit des processus temporo-spatiaux qui
+ne ressemblent pas à un fichier NetBioDyn — états nommés, durées de séjour, actions de
+voisinage — mais tout ce qu'il accepte doit se réduire à `.nbd2`, et ce qui ne le peut pas
+est refusé à la compilation.
+
+Ce n'est donc ni (A) une macro-syntaxe qui épouse les prédicats du moteur, ni (B) un
+langage autonome avec son propre moteur : c'est un langage dont **la surface est celle du
+processus** et **le sens entièrement réductible** à la cible. La phrase « reste infectée
+4 pas » est une description du phénomène ; `age >= 4` est sa traduction, pas sa définition.
+
+Cette position a un coût assumé : tout ce qui demanderait une mémoire, une horloge ou une
+échéance est hors langage. Elle a un avantage décisif : un modèle qui compile s'exécute
+réellement, et le compilateur peut le prouver ligne par ligne (`--audit`).

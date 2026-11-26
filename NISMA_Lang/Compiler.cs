@@ -7,6 +7,9 @@ public sealed class CompilationResult
 {
     public required NbdModel Model { get; init; }
     public List<string> Notes { get; } = new();
+
+    /// <summary>Une ligne par déclaration du script, avec ce qu'elle est devenue.</summary>
+    public List<string> Audit { get; } = new();
     public int BehaviourCount => Model.Model.Behaviours.Count;
     public int GrainCount => Model.Model.Grains.Count;
 }
@@ -35,6 +38,15 @@ public sealed class Compiler
     private readonly List<FieldDecl> _fieldDecls = new();
     private readonly HashSet<string> _usedColors = new(StringComparer.Ordinal);
     private Random _colorRandom = new(0);
+
+    private readonly HashSet<object> _consumed = new(ReferenceEqualityComparer.Instance);
+    private readonly List<(int Line, string Text)> _audit = new();
+
+    private void Consume(Declaration declaration, string target)
+    {
+        if (_consumed.Add(declaration))
+            _audit.Add((declaration.Line, $"{declaration.GetType().Name} → {target}"));
+    }
 
     private sealed class TypeInfo
     {
@@ -72,6 +84,8 @@ public sealed class Compiler
         var model = compiler.Build();
         var result = new CompilationResult { Model = model };
         result.Notes.AddRange(compiler._notes);
+        result.Audit.AddRange(compiler._audit.OrderBy(entry => entry.Line)
+            .Select(entry => $"ligne {entry.Line} : {entry.Text}"));
         return result;
     }
 
@@ -91,6 +105,14 @@ public sealed class Compiler
         AddProcessBehaviours(root);
         AddStart(model);
         AddModifiers(root);
+
+        foreach (var declaration in _script.Declarations)
+        {
+            if (_consumed.Contains(declaration)) continue;
+            throw new ScriptException(declaration.Line,
+                $"« {declaration.GetType().Name} » n'a pas été traduit vers .nbd2 : " +
+                "accepter une forme sans la traduire est interdit");
+        }
 
         root.Grains.Sort((a, b) => a.Id.CompareTo(b.Id));
         root.Fields.Sort((a, b) => a.Id.CompareTo(b.Id));
@@ -186,6 +208,9 @@ public sealed class Compiler
                     _fieldDecls.Add(field);
                     break;
             }
+
+            // les formes traduites plus loin (transitions, durées, effets, productions)
+            // sont consommées à leur point de traduction, pas ici
         }
 
         // hiérarchie : parents connus, pas de cycle, un seul parent
@@ -206,6 +231,14 @@ public sealed class Compiler
                 (float)field.Diffusion, field.HalfLife, directions.ToList());
             if (field.Opacity != 100) built.Opacity = field.Opacity;
             root.Fields.Add(built);
+        }
+
+        // l'audit se fait ici : à ce stade on sait si un agent est remplacé par ses états
+        foreach (var declaration in _script.Declarations)
+        {
+            if (declaration is ProductionDecl or TransitionDecl or StateReactionDecl
+                or StateEffectDecl or StayDecl) continue;
+            Consume(declaration, RegistryTarget(declaration));
         }
 
         // identifiants : ordre de déclaration des agents concrets
@@ -306,6 +339,24 @@ public sealed class Compiler
         return VividColors[_colorRandom.Next(VividColors.Length)];
     }
 
+    private string RegistryTarget(Declaration declaration) => declaration switch
+    {
+        ModelInfo => "nom et description du modèle",
+        GridDecl grid => $"grille {grid.Width}x{grid.Height}",
+        UpdateDecl update => update.Sequential ? "updatePlan Sequential" : "updatePlan Parallel",
+        SeedDecl seed => $"graine {seed.Seed} (tirages et couleurs)",
+        TagDecl tag => $"tag « {tag.Name} » résolu à la compilation",
+        AbstractDecl abs => $"type abstrait « {abs.Name} » résolu à la compilation",
+        ConcreteDecl concrete => $"grain « {concrete.Name} »",
+        AgentDecl agent => _types[agent.Name].Emitted
+            ? $"grain « {agent.Name} »"
+            : $"agent « {agent.Name} » remplacé par ses états",
+        ProcessDecl proc => $"processus sur « {proc.Agent} »",
+        StateDecl state => $"grain « {ProcessNames.Qualified(state.Process, state.Name)} »",
+        FieldDecl field => $"champ « {field.Name} »",
+        _ => "traduit",
+    };
+
     private void ApplyAttributes(Grain grain, Dictionary<string, string> attributes)
     {
         foreach (var (key, value) in attributes)
@@ -357,6 +408,8 @@ public sealed class Compiler
                     grain.FieldPermeable[fieldId] = value;
                     break;
             }
+
+            Consume(decl, $"{decl.Verb} {decl.Field} sur « {decl.Agent} »");
         }
     }
 
@@ -565,6 +618,7 @@ public sealed class Compiler
             if (effect.Kind == "moves")
             {
                 grain.MovementProbability = (float)effect.Value;
+                Consume(effect, $"mobilité {effect.Value} sur « {state} »");
                 continue;
             }
 
@@ -584,6 +638,8 @@ public sealed class Compiler
                     grain.FieldPermeable[fieldId] = (float)effect.Value;
                     break;
             }
+
+            Consume(effect, $"{effect.Kind} {effect.Target} sur « {state} »");
         }
     }
 
@@ -606,7 +662,11 @@ public sealed class Compiler
     {
         var stays = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (var stay in _script.Declarations.OfType<StayDecl>())
-            stays[ProcessNames.Qualified(stay.Process, stay.State)] = stay.Steps;
+        {
+            var state = ProcessNames.Qualified(stay.Process, stay.State);
+            stays[state] = stay.Steps;
+            Consume(stay, $"garde age >= {stay.Steps} sur les sorties de « {state} »");
+        }
 
         var index = root.Behaviours.Count;
 
@@ -637,6 +697,7 @@ public sealed class Compiler
             };
             if (condition is not null) ApplyCondition(behaviour, condition, transition.Line);
             root.Behaviours.Add(behaviour);
+            Consume(transition, $"comportement « {name} »");
             index++;
         }
 
@@ -667,6 +728,7 @@ public sealed class Compiler
                 .ToList();
             if (condition is not null) ApplyCondition(behaviour, condition, reaction.Line);
             root.Behaviours.Add(behaviour);
+            Consume(reaction, $"comportement de voisinage vers « {product} »");
             index++;
         }
 
@@ -678,7 +740,8 @@ public sealed class Compiler
                 || _script.Declarations.OfType<StateReactionDecl>()
                     .Any(r => r.Process == stay.Process && r.State == stay.State);
             if (!hasExit)
-                _notes.Add($"ligne {stay.Line} : « {state} » déclare une durée sans sortie — la durée ne sert à rien");
+                throw new ScriptException(stay.Line,
+                    $"« {state} » déclare une durée de séjour mais aucune sortie : la durée ne serait pas traduite");
         }
     }
 
@@ -713,6 +776,8 @@ public sealed class Compiler
             {
                 case StartRandom start:
                 {
+                    if (_initialState.TryGetValue(start.Agent, out var initialState))
+                        _notes.Add($"ligne {start.Line} : « {start.Agent} » désigne son état initial « {initialState} »");
                     var grain = ConcreteGrain(start.Agent, start.Line);
                     var free = cells.Select((value, index) => (value, index))
                         .Where(pair => pair.value < 0).Select(pair => pair.index).ToList();
