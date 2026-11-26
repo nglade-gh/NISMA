@@ -1,5 +1,0 @@
-/workspace/Prog/Simulateurs/NetBioDyn_Simulators/NISMA/test_NbdUtils/obj/Debug/net8.0/test.GeneratedMSBuildEditorConfig.editorconfig
-/workspace/Prog/Simulateurs/NetBioDyn_Simulators/NISMA/test_NbdUtils/obj/Debug/net8.0/test.AssemblyInfoInputs.cache
-/workspace/Prog/Simulateurs/NetBioDyn_Simulators/NISMA/test_NbdUtils/obj/Debug/net8.0/test.AssemblyInfo.cs
-/workspace/Prog/Simulateurs/NetBioDyn_Simulators/NISMA/test_NbdUtils/obj/Debug/net8.0/test.csproj.CoreCompileInputs.cache
-/workspace/Prog/Simulateurs/NetBioDyn_Simulators/NISMA/test_NbdUtils/obj/Debug/net8.0/test.sourcelink.json

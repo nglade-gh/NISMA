@@ -46,17 +46,8 @@ TEST-*.html
 .testcafe*
 
 # === Exceptions ===
-# Ne pas ignorer les fichiers .cs, .vb, .fs, .ps1, .sh, .py, .md, .txt, .json, .xml, .yaml, .yml
-# Ces fichiers sont généralement du code source ou des données
-!*.cs
-!*.vb
-!*.fs
-!*.ps1
-!*.sh
-!*.py
-!*.md
-!*.txt
-!*.json
-!*.xml
-!*.yaml
-!*.yml
+# Aucune exception globale ici : un `!*.json` ou `!*.cs` ré-inclut aussi les fichiers
+# générés dans obj/ et bin/, ce qui annulait les règles ci-dessus et faisait réapparaître
+# les sorties de build dans `git status`. Les sources du dépôt sont déjà suivies : une
+# règle d'exclusion ne les retire pas du suivi, elle empêche seulement d'ajouter de
+# nouveaux fichiers générés.
