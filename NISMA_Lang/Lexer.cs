@@ -90,6 +90,12 @@ public static class Lexer
                     continue;
                 }
 
+                if (EndsWithLink(current) && i + 1 < lines.Count)
+                {
+                    sb.Append(' ').Append(lines[++i].Text);
+                    continue;
+                }
+
                 if (i + 1 < lines.Count && StartsWithLink(lines[i + 1].Text))
                 {
                     sb.Append(' ').Append(lines[++i].Text);
@@ -134,7 +140,24 @@ public static class Lexer
     private static bool StartsWithLink(string text)
     {
         if (text.StartsWith(';') || text.StartsWith(',') || text.StartsWith(')')) return true;
+        if (text.StartsWith("&&") || text.StartsWith("||")) return true;
         return StartsWithWord(text, "and") || StartsWithWord(text, "or");
+    }
+
+    /// <summary>Une ligne qui se termine par un connecteur appelle une suite.</summary>
+    private static bool EndsWithLink(string text)
+    {
+        var trimmed = text.TrimEnd();
+        return trimmed.EndsWith("&&") || trimmed.EndsWith("||") ||
+               trimmed.EndsWith(',') || trimmed.EndsWith(';') ||
+               EndsWithWord(trimmed, "and") || EndsWithWord(trimmed, "or");
+    }
+
+    private static bool EndsWithWord(string text, string word)
+    {
+        if (!text.EndsWith(word, StringComparison.Ordinal)) return false;
+        var before = text.Length - word.Length - 1;
+        return before < 0 || !char.IsLetterOrDigit(text[before]);
     }
 
     private static bool StartsWithWord(string text, string word)
@@ -178,8 +201,8 @@ public static class Lexer
         public override string ToString() => Text;
     }
 
-    private static readonly string[] TwoCharOps = { "->", ">=", "<=", "==", "!=" };
-    private static readonly char[] OneCharOps = { '>', '<', '=', '∈' };
+    private static readonly string[] TwoCharOps = { "->", ">=", "<=", "==", "!=", "&&", "||" };
+    private static readonly char[] OneCharOps = { '>', '<', '=', '∈', '!' };
 
     public static List<Tok> Tokenize(int line, string text)
     {

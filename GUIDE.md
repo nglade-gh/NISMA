@@ -10,7 +10,7 @@ kilo-octets de JSON.
 ```
 # declare
 - grid 50 50
-- agent Cell lime
+- agent Cell [Lime]
 
 # model
 - Cell spawns when finds 3 Cell
@@ -69,9 +69,9 @@ commence par `and`, `or`, `;`, `,` ou `)`, ou si une parenthèse reste ouverte.
 - update parallel
 - seed 7
 
-- agent Cell lime
-- agent Virus crimson mob 1
-- agent Debris grey walls
+- agent Cell [Lime]
+- agent Virus [Crimson] mob 1
+- agent Debris [Grey] walls
 
 - abstract Immune < Cell
 - agent RestImmune < Immune
@@ -79,20 +79,23 @@ commence par `and`, `or`, `;`, `,` ou `)`, ou si une parenthèse reste ouverte.
 - tag Active
 
 - field IL2 diff 0.3 life 4 dirs 8
-- Cell makes IL2 1.0
+- Cell produces IL2 1.0
 ```
 
-- `agent NOM COULEUR` crée un grain. Attributs facultatifs : `mob` (probabilité de
-  mouvement), `life` (demi-vie), `icon`, `size`, `desc`, et `walls` (bords imperméables
-  au lieu du tore par défaut).
+- `agent NOM` crée un grain. La couleur est **facultative**, entre crochets :
+  `agent Cell [Lime]`. Sans couleur, NISMA en tire une dans la palette vive de
+  Centyllion, en évitant celles déjà prises — la règle exacte de NetBioDyn quand on crée
+  un agent. Le tirage suit `seed`, donc deux compilations donnent le même fichier.
+  Attributs facultatifs : `mob` (probabilité de mouvement), `life` (demi-vie), `icon`,
+  `size`, `desc`, et `walls` (bords imperméables au lieu du tore par défaut).
 - `abstract` crée un type qui **n'existe pas** dans le fichier produit : il ne sert qu'à
   regrouper des agents.
-- `agent NOM < PARENT with TAG` crée un sous-type. Un seul parent. Un sous-type non
-  coloré reprend la couleur de son parent — c'est ce qui rend `RestImmune` vert citron
-  dans l'exemple, sans l'avoir écrit.
-- `field NOM diff D life L dirs 4|8` : `diff` est la vitesse de diffusion (0 à 1), `life`
-  la demi-vie en pas, `dirs` le nombre de directions (4 ou 8).
-- `Agent makes CHAMP VALEUR` : production. `absorbs` pour l'influence, `lets` pour la
+- `agent NOM < PARENT with TAG` crée un sous-type. Un seul parent, couleur facultative
+  après les tags (`agent ActImmune < Immune with Active [Crimson]`). Sans couleur, il
+  reçoit la sienne : deux agents distincts doivent se distinguer sur la grille.
+- `field NOM [Couleur] diff D life L dirs 4|8` : couleur facultative, `diff` la vitesse de
+  diffusion (0 à 1), `life` la demi-vie en pas, `dirs` le nombre de directions (4 ou 8).
+- `Agent produces CHAMP VALEUR` : production. `absorbs` pour l'influence, `lets` pour la
   perméabilité.
 
 Les tags peuvent être déclarés après les agents qui les portent : le compilateur lit
@@ -104,7 +107,7 @@ Cinq formes, pas une de plus.
 
 ```
 # model
-- Cell makes IL2 1.0
+- Cell produces IL2 1.0
 
 - Cell spawns when finds 3 Cell
 - Cell dies when finds Cell < 2 or finds Cell > 3
@@ -114,7 +117,7 @@ Cinq formes, pas une de plus.
 
 | Forme | Sens |
 |---|---|
-| `A makes F V` | production du champ F par A |
+| `A produces F V` | production du champ F par A |
 | `A spawns` | une cellule vide devient A |
 | `A dies` | l'agent disparaît |
 | `A -> B` | A devient B (forme longue : `A reacts into B`) |
@@ -148,9 +151,25 @@ cellule devient » et « son voisin devient ».
 | `IL2 > 1` | valeur du champ sur la cellule courante |
 | `age > 10` | âge de l'agent |
 | `at step 10` | numéro de pas |
-| `not`, `and`, `or`, `( )` | combinaison |
+| `not` / `!`, `and` / `&&`, `or` / `||` | combinaison, les deux écritures au choix |
+| `( )` | groupement, imbriquable |
 
 Les comptages portent sur les huit voisins ; la case centrale n'est jamais comptée.
+
+Les connecteurs s'écrivent en mots ou en symboles, et rien n'interdit de les mêler :
+
+```
+- Cell -> Virus when finds Virus >= 3 or (finds Cell < 2 && IL2 > 0.5)
+- Cell dies when !(finds Cell >= 2) and age > 10
+```
+
+Une règle longue se coupe sur plusieurs lignes : il suffit que la ligne suivante commence
+par un connecteur, ou que la ligne courante se termine par l'un d'eux.
+
+```
+- Cell dies when finds Cell >= 2 and
+  (finds Virus >= 1 || IL2 > 0.9)
+```
 
 Le compilateur choisit la forme la plus éditable dans NetBioDyn : une conjonction de
 comptages et de comparaisons de champs devient des prédicats graphiques (`count`, `field`,

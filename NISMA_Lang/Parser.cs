@@ -106,11 +106,15 @@ public sealed class Parser
         if (head.Is("field"))
         {
             var name = ExpectWord(tokens, 1, line);
+            var start = 2;
+            var fieldColor = start < tokens.Count && tokens[start].Is("[")
+                ? ReadColor(tokens, ref start, line)
+                : null;
             var diffusion = 1.0;
             var halfLife = 0;
             var directions = 8;
             var opacity = 100;
-            for (var i = 2; i < tokens.Count; i++)
+            for (var i = start; i < tokens.Count; i++)
             {
                 switch (tokens[i].Text)
                 {
@@ -131,32 +135,48 @@ public sealed class Parser
                 }
             }
 
-            return new FieldDecl(line, name, diffusion, halfLife, directions, opacity);
+            return new FieldDecl(line, name, fieldColor, diffusion, halfLife, directions, opacity);
         }
 
         if (head.Is("agent"))
         {
             var name = ExpectWord(tokens, 1, line);
+
             if (tokens.Count > 2 && tokens[2].Is("<"))
             {
                 var parent = ExpectWord(tokens, 3, line);
                 var tags = new List<string>();
-                if (tokens.Count > 4 && tokens[4].Is("with"))
+                var cursor = 4;
+                if (cursor < tokens.Count && tokens[cursor].Is("with"))
                 {
-                    for (var i = 5; i < tokens.Count; i++)
+                    cursor++;
+                    while (cursor < tokens.Count && !tokens[cursor].Is("["))
                     {
-                        if (tokens[i].Kind == TokKind.Word) tags.Add(tokens[i].Text);
-                        else if (!tokens[i].Is(","))
-                            throw new ScriptException(line, $"tag inattendu « {tokens[i].Text} »");
+                        if (tokens[cursor].Kind == TokKind.Word) tags.Add(tokens[cursor].Text);
+                        else if (!tokens[cursor].Is(","))
+                            throw new ScriptException(line, $"tag inattendu « {tokens[cursor].Text} »");
+                        cursor++;
                     }
                 }
 
-                return new ConcreteDecl(line, name, parent, tags);
+                var subtypeColor = cursor < tokens.Count && tokens[cursor].Is("[")
+                    ? ReadColor(tokens, ref cursor, line)
+                    : null;
+                if (cursor < tokens.Count)
+                    throw new ScriptException(line, $"texte inattendu après la déclaration : « {tokens[cursor].Text} »");
+                return new ConcreteDecl(line, name, parent, tags, subtypeColor);
             }
 
-            var color = tokens.Count > 2 ? tokens[2].Text : "Grey";
+            var index = 2;
+            string? color = null;
+            if (index < tokens.Count && tokens[index].Is("["))
+                color = ReadColor(tokens, ref index, line);
+            else if (index < tokens.Count && tokens[index].Kind == TokKind.Word)
+                throw new ScriptException(line,
+                    $"la couleur s'écrit entre crochets : agent {name} [{tokens[index].Text}]");
+
             var attributes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            for (var i = 3; i < tokens.Count; i++)
+            for (var i = index; i < tokens.Count; i++)
             {
                 var key = tokens[i].Text.ToLowerInvariant();
                 if (key == "walls")
@@ -173,8 +193,8 @@ public sealed class Parser
             return new AgentDecl(line, name, color, attributes);
         }
 
-        // Agent makes|absorbs|lets FIELD VALUE
-        if (tokens.Count >= 4 && (tokens[1].Is("makes") || tokens[1].Is("absorbs") || tokens[1].Is("lets")))
+        // Agent produces|absorbs|lets FIELD VALUE
+        if (tokens.Count >= 4 && (tokens[1].Is("produces") || tokens[1].Is("absorbs") || tokens[1].Is("lets")))
             return new ProductionDecl(line, tokens[0].Text, tokens[1].Text.ToLowerInvariant(),
                 tokens[2].Text, ExpectNumber(tokens, 3, line));
 
@@ -364,6 +384,20 @@ public sealed class Parser
     // Helpers
     // -----------------------------------------------------------------------
 
+    /// <summary>Lit « [Couleur] » et avance l'index au-delà du crochet fermant.</summary>
+    private static string ReadColor(List<Tok> tokens, ref int index, int line)
+    {
+        if (!tokens[index].Is("[")) throw new ScriptException(line, "couleur attendue entre crochets");
+        if (index + 1 >= tokens.Count) throw new ScriptException(line, "couleur absente entre les crochets");
+        var color = tokens[index + 1];
+        if (color.Kind != TokKind.Word)
+            throw new ScriptException(line, $"couleur invalide « {color.Text} »");
+        if (index + 2 >= tokens.Count || !tokens[index + 2].Is("]"))
+            throw new ScriptException(line, "crochet fermant attendu après la couleur");
+        index += 3;
+        return color.Text;
+    }
+
     private static Tok Expect(List<Tok> tokens, int index, int line, string what)
     {
         if (index >= tokens.Count) throw new ScriptException(line, $"attendu {what} en fin d'objet");
@@ -423,7 +457,7 @@ public sealed class Parser
         public (Cond Cond, int Next) ReadOr()
         {
             var items = new List<Cond> { ReadAnd() };
-            while (!AtEnd && Peek.Is("or"))
+            while (!AtEnd && (Peek.Is("or") || Peek.Is("||")))
             {
                 _pos++;
                 items.Add(ReadAnd());
@@ -435,7 +469,7 @@ public sealed class Parser
         private Cond ReadAnd()
         {
             var items = new List<Cond> { ReadNot() };
-            while (!AtEnd && Peek.Is("and"))
+            while (!AtEnd && (Peek.Is("and") || Peek.Is("&&")))
             {
                 _pos++;
                 items.Add(ReadNot());
@@ -446,7 +480,7 @@ public sealed class Parser
 
         private Cond ReadNot()
         {
-            if (!AtEnd && Peek.Is("not"))
+            if (!AtEnd && (Peek.Is("not") || Peek.Is("!")))
             {
                 _pos++;
                 return new NotCond(ReadNot());

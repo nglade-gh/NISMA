@@ -93,8 +93,9 @@ indentation plus forte ne signifie rien, sinon on retombe sur le défaut des lan
 indentation significative. La continuation est décidée par le lexique, selon trois
 règles.
 
-**1. La ligne suivante commence par un opérateur de liaison** : `and`, `or`, `;`, `,`,
-`)`. La puce se poursuit.
+**1. La ligne suivante commence par un opérateur de liaison** — `and`, `&&`, `or`, `||`,
+`;`, `,`, `)` — **ou la ligne courante se termine par l'un d'eux**. La puce se poursuit
+dans les deux cas : un connecteur en fin de ligne annonce visiblement une suite.
 
 ```
 - neighbour Virus -> Debris when finds Cell > 0
@@ -138,9 +139,9 @@ reformatage malheureux changerait alors la signification du fichier sans rien si
 - update parallel
 - seed 42
 
-- agent Cell lime
-- agent Virus crimson mob 1
-- agent Debris grey
+- agent Cell [Lime]
+- agent Virus [Crimson] mob 1
+- agent Debris [Grey]
 
 - abstract Immune < Cell
 - agent RestImmune < Immune
@@ -156,11 +157,11 @@ reformatage malheureux changerait alors la signification du fichier sans rien si
 | `grid L H` | taille de la grille |
 | `update parallel\|sequential` | plan de mise à jour |
 | `seed N` | graine aléatoire |
-| `agent NOM COULEUR` | grain concret |
+| `agent NOM [COULEUR]` | grain concret, couleur facultative |
 | `abstract NOM < PARENT` | type abstrait, absent du fichier produit |
-| `agent NOM < PARENT with T1, T2` | sous-type concret, un seul parent |
+| `agent NOM < PARENT with T1, T2 [COULEUR]` | sous-type concret, un seul parent |
 | `tag NOM` | caractéristique énumérée |
-| `field NOM diff D life L dirs 4\|8` | champ |
+| `field NOM [COULEUR] diff D life L dirs 4\|8` | champ |
 
 **Attributs de présentation** — `mob` (mobilité), `life` (demi-vie du grain), `icon`,
 `size`, `desc`. Ils n'ont aucun effet sur la simulation, et c'est pour cela qu'ils vivent
@@ -195,7 +196,7 @@ Actions : celles des comportements, plus `pause`, `capture`, `stop`, `activate B
 
 ```
 # model
-- Cell makes IL2 1.0
+- Cell produces IL2 1.0
 
 ## growth
 - Cell spawns when finds 3 Cell
@@ -208,7 +209,7 @@ Actions : celles des comportements, plus `pause`, `capture`, `stop`, `activate B
 
 | Forme | Sens |
 |---|---|
-| `Cell makes F V` | production du champ F |
+| `Cell produces F V` | production du champ F |
 | `Cell absorbs F V` | influence du champ F |
 | `Cell lets F V` | perméabilité au champ F |
 | `Cell spawns` | une cellule vide devient Cell |
@@ -239,10 +240,21 @@ Actions : celles des comportements, plus `pause`, `capture`, `stop`, `activate B
 | `age > 10` | âge de l'agent |
 | `at step 10` | numéro de pas |
 | `Cell ∈ around` | forme symbolique de `finds Cell` |
-| `not`, `and`, `or`, parenthèses | combinaison |
+| `not` / `!`, `and` / `&&`, `or` / `||` | combinaison, les deux écritures admises |
+| parenthèses | groupement, imbriquable |
 
 Les comptages portent sur les huit voisins, la case centrale n'est jamais comptée.
 `finds only` s'appuie sur `hasOnly` de NetBioDyn.
+
+Les connecteurs s'écrivent en mots ou en symboles, et se mêlent sans difficulté :
+
+```
+- Cell -> Virus when finds Virus >= 3 or (finds Cell < 2 && IL2 > 0.5)
+```
+
+La formule produite parenthèse chaque sous-expression —
+`(count(1)>=3) || ((count(0)<2) && (field(0)>0.5))` — pour que la précédence soit celle
+du script et non celle de l'analyseur qui la relira.
 
 ## 9. start — état initial
 
@@ -414,9 +426,9 @@ que le sucre ne change pas la sémantique.
 # declare
 - grid 100 100
 - seed 42
-- agent Cell lime
-- agent Virus crimson mob 1
-- agent Debris grey
+- agent Cell [Lime]
+- agent Virus [Crimson] mob 1
+- agent Debris [Grey]
 - abstract Immune < Cell
 - agent RestImmune < Immune
 - agent ActImmune < Immune with Active
@@ -428,7 +440,7 @@ que le sucre ne change pas la sémantique.
 - at step 500: capture
 
 # model
-- Cell makes IL2 1.0
+- Cell produces IL2 1.0
 
 ## growth
 - Cell spawns when finds 3 Cell

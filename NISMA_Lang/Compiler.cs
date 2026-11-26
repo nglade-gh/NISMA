@@ -22,8 +22,17 @@ public sealed class Compiler
 
     private static readonly string[] Directions4 = { "Left", "Up", "Right", "Down" };
 
-    private static readonly string[] FieldPalette =
-        { "Orange", "DodgerBlue", "SeaGreen", "MediumOrchid", "Coral", "GoldenRod", "Turquoise", "Plum" };
+    /// <summary>Palette vive de Centyllion : les couleurs ternes rendaient la grille sale.</summary>
+    private static readonly string[] VividColors =
+    {
+        "Red", "Orange", "Gold", "Chartreuse", "Lime", "SpringGreen",
+        "Cyan", "DeepSkyBlue", "DodgerBlue", "RoyalBlue", "BlueViolet", "DarkViolet",
+        "Magenta", "DeepPink", "Crimson", "Chocolate", "Violet",
+    };
+
+    private readonly Dictionary<string, string> _colors = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _usedColors = new(StringComparer.Ordinal);
+    private Random _colorRandom = new(0);
 
     private sealed class TypeInfo
     {
@@ -32,7 +41,6 @@ public sealed class Compiler
         public bool IsAbstract { get; init; }
         public List<string> Tags { get; } = new();
         public int Id { get; set; } = -1;
-        public string Color { get; set; } = "Grey";
         public Dictionary<string, string> Attributes { get; } = new(StringComparer.OrdinalIgnoreCase);
         public bool IsConcrete => !IsAbstract;
     }
@@ -92,6 +100,12 @@ public sealed class Compiler
         // écrire « tag Active » avant l'agent qui le porte.
         foreach (var tag in _script.Declarations.OfType<TagDecl>()) _tags.Add(tag.Name);
 
+        // la graine est lue avant les couleurs : celles-ci sont tirées au sort de façon
+        // reproductible, comme les agents de l'état initial
+        foreach (var seed in _script.Declarations.OfType<SeedDecl>()) _seed = seed.Seed;
+        _colorRandom = new Random(unchecked(_seed * 7919 + 13));
+        AssignColors();
+
         foreach (var decl in _script.Declarations)
         {
             switch (decl)
@@ -134,7 +148,6 @@ public sealed class Compiler
                     if (_types.ContainsKey(agent.Name))
                         throw new ScriptException(agent.Line, $"agent « {agent.Name} » déclaré deux fois");
                     var plain = new TypeInfo { Name = agent.Name, Parent = null, IsAbstract = false };
-                    plain.Color = CanonicalColor(agent.Color);
                     foreach (var (key, value) in agent.Attributes) plain.Attributes[key] = value;
                     _types[agent.Name] = plain;
                     break;
@@ -144,9 +157,8 @@ public sealed class Compiler
                     var fieldId = _fieldIds.Count;
                     _fieldIds[field.Name] = fieldId;
                     var directions = field.Directions == 4 ? Directions4 : Directions8;
-                    root.Fields.Add(Field.FromPhysical(fieldId, field.Name,
-                        FieldPalette[fieldId % FieldPalette.Length], (float)field.Diffusion, field.HalfLife,
-                        directions.ToList()));
+                    root.Fields.Add(Field.FromPhysical(fieldId, field.Name, _colors[field.Name],
+                        (float)field.Diffusion, field.HalfLife, directions.ToList()));
                     if (field.Opacity != 100)
                         root.Fields[^1].Opacity = field.Opacity;
                     break;
@@ -159,16 +171,6 @@ public sealed class Compiler
             if (info.Parent is null) continue;
             if (!_types.ContainsKey(info.Parent))
                 throw new ScriptException(0, $"parent inconnu « {info.Parent} » pour « {info.Name} »");
-        }
-
-        // couleur : un sous-type non coloré reprend celle de son parent
-        foreach (var info in _types.Values)
-        {
-            var guard = 0;
-            var current = info;
-            while (current.Color == "Grey" && current.Parent is not null && guard++ < 32)
-                current = _types[current.Parent];
-            info.Color = current.Color;
         }
 
         // identifiants : ordre de déclaration des agents concrets
@@ -184,7 +186,7 @@ public sealed class Compiler
             if (name is null) continue;
             var info = _types[name];
             info.Id = nextId++;
-            var grain = new Grain(info.Id, info.Name, info.Color);
+            var grain = new Grain(info.Id, info.Name, _colors[name]);
             ApplyAttributes(grain, info.Attributes);
             root.Grains.Add(grain);
             _grains.Add(grain);
@@ -204,6 +206,54 @@ public sealed class Compiler
             model.Simulation.Settings.CustomWidth = _gridWidth;
             model.Simulation.Settings.CustomHeight = _gridHeight;
         }
+    }
+
+    /// <summary>
+    /// Une couleur explicite est retenue ; une couleur absente est tirée dans la palette
+    /// vive, en évitant celles déjà prises — la règle de Centyllion pour un agent neuf.
+    /// </summary>
+    private void AssignColors()
+    {
+        foreach (var declaration in _script.Declarations)
+        {
+            var (name, explicitColor) = declaration switch
+            {
+                AgentDecl agent => (agent.Name, agent.Color),
+                ConcreteDecl concrete => (concrete.Name, concrete.Color),
+                FieldDecl field => (field.Name, field.Color),
+                _ => (null, null),
+            };
+            if (name is null) continue;
+
+            if (explicitColor is not null)
+            {
+                var color = CanonicalColor(explicitColor);
+                _colors[name] = color;
+                _usedColors.Add(color);
+            }
+        }
+
+        foreach (var declaration in _script.Declarations)
+        {
+            var name = declaration switch
+            {
+                AgentDecl agent => agent.Name,
+                ConcreteDecl concrete => concrete.Name,
+                FieldDecl field => field.Name,
+                _ => null,
+            };
+            if (name is null || _colors.ContainsKey(name)) continue;
+            var color = AvailableColor();
+            _colors[name] = color;
+            _usedColors.Add(color);
+        }
+    }
+
+    private string AvailableColor()
+    {
+        var free = VividColors.Where(c => !_usedColors.Contains(c)).ToList();
+        if (free.Count > 0) return free[_colorRandom.Next(free.Count)];
+        return VividColors[_colorRandom.Next(VividColors.Length)];
     }
 
     private void ApplyAttributes(Grain grain, Dictionary<string, string> attributes)
@@ -246,7 +296,7 @@ public sealed class Compiler
             var value = (float)decl.Value;
             switch (decl.Verb)
             {
-                case "makes":
+                case "produces":
                     grain.FieldProductions[fieldId] = value;
                     break;
                 case "absorbs":
@@ -414,17 +464,15 @@ public sealed class Compiler
 
     private string ToFormula(Cond condition, int line) => condition switch
     {
-        AndCond and => string.Join(" && ", and.Items.Select(c => Wrap(ToFormula(c, line)))),
-        OrCond or => string.Join(" || ", or.Items.Select(c => Wrap(ToFormula(c, line)))),
-        NotCond not => "!" + Wrap(ToFormula(not.Inner, line)),
+        AndCond and => string.Join(" && ", and.Items.Select(c => "(" + ToFormula(c, line) + ")")),
+        OrCond or => string.Join(" || ", or.Items.Select(c => "(" + ToFormula(c, line) + ")")),
+        NotCond not => "!(" + ToFormula(not.Inner, line) + ")",
         CountCond count => $"{CountExpression(count, line)}{count.Op}{count.Value}",
         NothingCond => "count(-1)==0",
         OnlyCond only => $"hasOnly({{{string.Join(",", only.Types.Select(t => ConcreteGrain(t, line).Id))}}})",
         MeasureCond measure => MeasureFormula(measure, line),
         _ => throw new ScriptException(line, "condition non compilable"),
     };
-
-    private static string Wrap(string text) => text.Contains(' ') ? $"({text})" : text;
 
     /// <summary>count(id) pour un agent, count(-1) pour « any », somme pour un type.</summary>
     private string CountExpression(CountCond count, int line)

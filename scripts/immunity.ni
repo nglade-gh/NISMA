@@ -4,9 +4,9 @@
 - grid 60 60
 - seed 7
 
-- agent Cell lime
-- agent Virus crimson mob 1
-- agent Debris grey
+- agent Cell [Lime]
+- agent Virus [Crimson] mob 1
+- agent Debris [Grey]
 
 - abstract Immune < Cell
 - agent RestImmune < Immune
@@ -14,7 +14,7 @@
 - tag Active
 
 - field IL2 diff 0.3 life 4 dirs 8
-- Cell makes IL2 1.0
+- Cell produces IL2 1.0
 
 # model
 ## activation

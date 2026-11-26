@@ -26,19 +26,19 @@ public sealed record UpdateDecl(int Line, bool Sequential) : Declaration(Line);
 public sealed record SeedDecl(int Line, int Seed) : Declaration(Line);
 
 /// <summary>Grain concret déclaré sans parent.</summary>
-public sealed record AgentDecl(int Line, string Name, string Color, IReadOnlyDictionary<string, string> Attributes)
+public sealed record AgentDecl(int Line, string Name, string? Color, IReadOnlyDictionary<string, string> Attributes)
     : Declaration(Line);
 
 /// <summary>Type abstrait : jamais écrit dans le fichier produit.</summary>
 public sealed record AbstractDecl(int Line, string Name, string? Parent) : Declaration(Line);
 
 /// <summary>Grain concret sous-type d'un type abstrait, éventuellement porteur de tags.</summary>
-public sealed record ConcreteDecl(int Line, string Name, string Parent, IReadOnlyList<string> Tags)
+public sealed record ConcreteDecl(int Line, string Name, string Parent, IReadOnlyList<string> Tags, string? Color)
     : Declaration(Line);
 
 public sealed record TagDecl(int Line, string Name) : Declaration(Line);
 
-public sealed record FieldDecl(int Line, string Name, double Diffusion, int HalfLife, int Directions, int Opacity)
+public sealed record FieldDecl(int Line, string Name, string? Color, double Diffusion, int HalfLife, int Directions, int Opacity)
     : Declaration(Line);
 
 /// <summary>Production, influence ou perméabilité d'un champ par un grain.</summary>

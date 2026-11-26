@@ -3,7 +3,7 @@
 - model "Jeu de la vie" description "Automate cellulaire de Conway"
 - grid 50 50
 - seed 42
-- agent Cell lime walls
+- agent Cell [Lime] walls
 
 # model
 ## growth
