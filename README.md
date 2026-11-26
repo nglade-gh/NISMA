@@ -10,7 +10,8 @@ JSON/opérationnelle, tests passés. Nouveau : développement complet par l'assi
 
 **Langage** : `LANGAGE.md` (spécification), `GUIDE.md` (mode d'emploi du modélisateur),
 `NISMA_Lang/` (prototype du compilateur : script `.ni` → `.nbd2`) et `NISMA_Ide/`
-(atelier web avec coloration syntaxique). Lancer l'atelier :
+(atelier web avec coloration syntaxique), `docs/revue-langages.md` (revue des familles de
+langages et décisions de conception). Lancer l'atelier :
 `dotnet run --project NISMA_Ide` puis <http://127.0.0.1:5080>.
 
 ---
