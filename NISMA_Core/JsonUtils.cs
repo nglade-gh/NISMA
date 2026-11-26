@@ -96,11 +96,21 @@ public static class JsonUtils
         // Remove thumbnail if present
         root.Remove("thumbnail");
 
-        // Remove model.name and model.description if present (even if empty)
+        // model.name and model.description are kept when they carry something and
+        // removed when empty, exactly as Centyllion writes them: dropping them
+        // unconditionally lost the title and the description of any model produced
+        // by the web interface as soon as it went through NISMA.
         if (root["model"] is JsonObject modelObj)
         {
-            modelObj.Remove("name");
-            modelObj.Remove("description");
+            foreach (var key in new[] { "name", "description" })
+            {
+                if (modelObj[key] is not JsonValue value
+                    || !value.TryGetValue<string>(out var text)
+                    || string.IsNullOrWhiteSpace(text))
+                {
+                    modelObj.Remove(key);
+                }
+            }
 
             // empty collections are omitted by Centyllion
             CleanEmptyArray(modelObj, "grains");

@@ -190,9 +190,13 @@ des grains, comportements et champs et les collections vides
 (tous les prédicats, réactions avec `sourceReactive`, actions, formule,
 `toric`, `boundaryConditions`, `updatePlan` séquentiel, `settings`) est chargé
 par `NISMA_Core`, réécrit par `JsonUtils.SaveNbd`, puis comparé nœud par nœud au
-fichier d'origine : 0 clé perdue, 0 clé ajoutée, 0 valeur modifiée (hors
-`model.name`/`model.description`, supprimés par convention). Le même contrôle
-sur les 44 modèles de `NetBioDyn_Models/` donne le même résultat.
+fichier d'origine : 0 clé perdue, 0 clé ajoutée, 0 valeur modifiée.
+`model.name` et `model.description` sont désormais **conservés** quand ils sont
+renseignés et omis quand ils sont vides ou blancs, exactement comme Centyllion
+les écrit : les supprimer sans condition faisait perdre le titre et la
+description de tout modèle produit par l'interface web dès qu'il passait par
+NISMA. Les 44 modèles de `NetBioDyn_Models/` ne portent ni l'un ni l'autre, donc
+leur sortie reste identique.
 
 **Compatibilité** : les fichiers anciens (sans ces clés) restent lisibles
 (valeurs par défaut). Les fichiers produits par cette version contiennent des
