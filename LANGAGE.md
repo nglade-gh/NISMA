@@ -31,17 +31,24 @@ Trois règles, dont tout le reste découle :
 3. **Rien n'est implicite.** Toute résolution incertaine (un produit qui pourrait
    être deux grains) est une **erreur**, jamais un choix par défaut.
 
-## 3. Structure d'un fichier
+## 3. Trois sections, dans l'ordre
 
-Un fichier contient quatre sections, dans cet ordre. Chacune peut être vide sauf
-la première.
+Comme un programme Pascal sépare ses déclarations de son corps, un script sépare ce qui
+**existe**, ce qui **agit sur la simulation**, et ce qui **modélise**. L'ordre est
+imposé ; une section peut être vide, mais elle ne peut pas être déplacée.
 
 ```
-declarations      agents, types abstraits, tags, champs, productions
-comportements     ce qui se transforme, quand, avec quelle probabilité
-etat initial      qui est où au premier pas
-reglages          grille, plan de mise à jour, graine
+declare         ce qui existe : agents, types, tags, champs, caractéristiques
+modifiers       ce qui pilote la simulation : actions périodiques, pauses, captures
+model           ce qui modélise : productions de champs et comportements
 ```
+
+Les en-têtes sont facultatifs ; en leur absence, l'ordre des sections fait foi.
+
+La séparation n'est pas cosmétique : les deux premières sections parlent de **support**
+(noms, couleurs, formes, cadence d'actions globales), la troisième parle de **biologie**.
+Un modélisateur qui ne lit que `model` doit comprendre le modèle ; un développeur qui ne
+lit que `declare` doit pouvoir changer une couleur sans toucher au sens.
 
 ## 3bis. Deux niveaux, une seule cible
 
@@ -60,112 +67,162 @@ Conséquence pratique : l'outil peut convertir un `.nbd2` en script mécanique. 
 toujours d'un modèle existant, jamais d'une page blanche, et la conversion est le
 meilleur test de complétude du langage.
 
-## 4. Déclarations
-
-Un mot par chose, pas d'articles. Les valeurs par défaut sont celles de NetBioDyn et
-s'écrivent seulement si elles diffèrent.
+## 4. declare — ce qui existe
 
 ```
-grid 100 100
-update parallel
-seed 42
+declare
+  grid 100 100
+  update parallel
+  seed 42
 
-agent Cell lime
-agent Virus crimson mob 1
-agent Debris grey
+  agent Cell lime
+  agent Virus crimson mob 1
+  agent Debris grey
 
-abstract Immune < Cell
-agent RestImmune < Immune
-agent ActImmune < Immune +Active
-tag Active
+  abstract Immune < Cell
+  agent RestImmune < Immune
+  agent ActImmune < Immune with Active
+  tag Active
 
-field IL2 diff 0.3 life 4 dirs 8
-field IFN diff 0.2 life 6 dirs 4 opacity 60
-
-Cell makes IL2 1.0
-Cell absorbs IL2 0.5
-Cell lets IL2 0.2
+  field IL2 diff 0.3 life 4 dirs 8
+  field IFN diff 0.2 life 6 dirs 4 opacity 60
 ```
 
 | Forme | Sens |
 |---|---|
-| `agent NOM COULEUR` | grain concret ; `mob`, `life`, `icon`, `desc` en option |
-| `abstract NOM < PARENT` | type abstrait, jamais écrit dans le fichier |
-| `agent NOM < PARENT +Tag1 +Tag2` | sous-type concret, un seul parent |
+| `grid L H` | taille de la grille |
+| `update parallel\|sequential` | plan de mise à jour |
+| `seed N` | graine aléatoire |
+| `agent NOM COULEUR` | grain concret |
+| `abstract NOM < PARENT` | type abstrait, absent du fichier produit |
+| `agent NOM < PARENT with T1, T2` | sous-type concret, un seul parent |
 | `tag NOM` | caractéristique énumérée |
-| `field NOM diff D life L dirs 4\|8` | champ ; `opacity`, `wall` en option |
-| `A makes F V` | production du champ F par A, valeur V |
-| `A absorbs F V` | influence du champ F sur A |
-| `A lets F V` | perméabilité de A au champ F |
+| `field NOM diff D life L dirs 4\|8` | champ |
 
-## 5. Comportements
+**Attributs facultatifs** — `mob` (mobilité), `life` (demi-vie du grain), `icon`,
+`size`, `desc`. Aucun n'a d'effet sur la sémantique : ce sont des attributs de
+présentation, et c'est précisément pour cela qu'ils vivent dans `declare` et non dans
+`model`. `opacity` et `wall` (paroi imperméable) sont les seuls attributs de champ qui
+changent quelque chose, et ils restent dans `declare` parce qu'ils décrivent le support.
 
-Une ligne par comportement. La forme est toujours la même :
+## 5. modifiers — ce qui pilote la simulation
 
-```
-SUJET VERBE [OBJET] [if CONDITIONS] [p PROBABILITE] [; ACTIONS]
-```
-
-| Sujet | Verbe | Sens |
-|---|---|---|
-| `Cell` | `spawn` | génération spontanée : une cellule vide devient Cell |
-| `Cell` | `die` | l'agent disparaît |
-| `A -> B` | — | transformation : A devient B |
-| `neighbour A -> B` | — | une ligne de réaction : un voisin A devient B |
+Des actions globales, déclenchées par le temps ou par une condition d'ensemble. Elles
+deviennent des `modifiers` dans le fichier produit.
 
 ```
-Cell spawn if 3 Cell around
-Cell die if Cell around < 2 or Cell around > 3
-Immune -> ActImmune if IL2 > 1
-neighbour Virus -> Debris if Virus around >= 1
-Cell -> Debris p 0.1 if age > 10
-neighbour Virus -> Debris if Virus around >= 1; set IL2 0
+modifiers
+  every 50 steps: add 20 Virus in square (10,10)-(20,20)
+  at step 10: set IL2 0 everywhere
+  at step 200: capture
+  when IL2 < 0.01 everywhere: pause
 ```
 
-- `Immune` étant abstrait, `Immune -> ActImmune` s'étend en un comportement par grain
-  concret de `Immune` (§6). Le mot `any` reste disponible pour insister.
-- Le produit d'une transformation doit être un grain **concret** ; sinon erreur.
+| Déclencheur | Sens |
+|---|---|
+| `every N steps` | tous les N pas |
+| `at step N` | au pas N exactement |
+| `when CONDITION everywhere` | dès que la condition tient sur toute la grille |
+
+Les actions sont celles des comportements, plus `pause`, `capture`, `stop`,
+`activate`/`deactivate` d'un comportement. Une seule action par modificateur ; deux
+lignes pour deux actions.
+
+## 6. model — ce qui modélise
+
+```
+model
+  Cell makes IL2 1.0
+
+  Cell spawns when finds 3 Cell
+  Cell dies when finds Cell < 2 or finds Cell > 3
+  Immune -> ActImmune when IL2 > 1
+  neighbour Virus -> Debris when finds Virus
+  Cell -> Debris p 0.1 when age > 10
+  neighbour Virus -> Debris when finds Virus; set IL2 0
+```
+
+| Forme | Sens |
+|---|---|
+| `Cell makes F V` | production du champ F |
+| `Cell absorbs F V` | influence du champ F |
+| `Cell lets F V` | perméabilité au champ F |
+| `Cell spawns` | une cellule vide devient Cell |
+| `Cell dies` | l'agent disparaît |
+| `A -> B` | A devient B ; forme longue `A reacts into B` |
+| `neighbour A -> B` | un voisin A devient B (ligne de réaction) |
+
+- Un type abstrait en sujet s'étend de lui-même en un comportement par grain concret
+  (§7). `any` reste disponible pour insister.
+- Le produit d'une transformation doit être un grain **concret** : sinon erreur, avec la
+  liste des candidats.
 - `p 0.3` vaut 1 par défaut.
 - Les actions suivent `;`, séparées par `;`.
 
-## 6. Conditions
+## 7. Conditions
 
-Le vocabulaire tient en une douzaine de formes :
+`finds` compte les voisins, `∈` teste l'appartenance à un ensemble :
 
 | Forme | Sens |
 |---|---|
-| `3 Cell around` | exactement 3 voisins de type Cell |
-| `Cell around < 2` | moins de deux |
-| `Cell around >= 1` | au moins un |
-| `Cell around` | au moins un (raccourci) |
-| `around Cell Virus only` | aucun type hors de ceux-là |
-| `IL2 > 1` | valeur du champ sur la cellule courante |
-| `IL2@near > 0.2` | valeur du champ chez un voisin |
+| `finds 3 Cell` | exactement trois voisins de type Cell |
+| `finds Cell < 2` | moins de deux |
+| `finds Cell` | au moins un |
+| `finds nothing` | aucun voisin occupé |
+| `finds only Cell, Virus` | aucun type hors de ceux-là |
+| `IL2 > 1` | champ sur la cellule courante |
+| `IL2 in near > 0.2` | champ chez un voisin |
 | `age > 10` | âge de l'agent |
-| `step is 10` | numéro de pas |
-| `not` , `and` , `or` , parenthèses | combinaison |
+| `at step 10` | numéro de pas |
+| `Cell ∈ around` | forme symbolique de `finds Cell` |
+| `not`, `and`, `or`, parenthèses | combinaison |
 
-Les comptages portent sur les huit voisins ; la case centrale n'est jamais comptée.
-`around Cell Virus only` s'appuie sur `hasOnly` de NetBioDyn, `3 Cell around` sur
-`count(0) == 3`.
+Les comptages portent sur les huit voisins, la case centrale n'est jamais comptée.
+`finds only` s'appuie sur `hasOnly` de NetBioDyn.
 
-## 7. État initial
+## 8. État initial
+
+En fin de fichier, après `model` :
 
 ```
 start 200 Cell random
-start Cell at 5 5
-start Virus from "glider.rle" at 10 10
+start Cell in (5,5)
+start Virus from "glider.rle" in (10,10)
 ```
 
-Trois formes seulement : densité aléatoire, position explicite, motif importé (RLE,
-`.cells`, matrice — les formats que NetBioDyn accepte déjà). Un motif plus complexe
-s'écrit dans un fichier de stencil, pas dans le script.
+Trois formes seulement. Un motif plus complexe s'écrit dans un fichier de stencil, pas
+dans le script.
 
-## 8. Réglages
+## 8bis. Blocs et portées
 
-`grid`, `update` et `seed` figurent en tête du fichier (§4). `update` vaut `parallel`
-par défaut, `sequential` sinon. Sans `seed`, NISMA en tire une et l'écrit dans le
-fichier, pour que deux générations du même script soient identiques.
+Un bloc regroupe des règles sous un nom. Il ne crée ni variable ni sous-programme : il
+donne une **unité de lecture** et une **unité de pilotage**.
+
+```
+model
+  Cell makes IL2 1.0
+
+  infection:
+    p 0.2
+    neighbour Virus -> Debris when finds Virus
+    Cell -> Debris when finds 3 Virus
+
+  growth:
+    Cell spawns when finds 3 Cell
+    Cell dies when finds Cell < 2 or finds Cell > 3
+```
+
+1. `nom:` ouvre un bloc ; les lignes indentées lui appartiennent. **Pas d'imbrication**
+   en v1 : NetBioDyn ne connaît pas les groupes, et une hiérarchie de portées poserait
+   des questions sans réponse (une probabilité de groupe s'applique-t-elle à chaque
+   règle ou au groupe entier ?).
+2. Une règle hors bloc appartient au bloc implicite `main`.
+3. Un `p` en tête de bloc s'applique à **chaque règle du bloc, indépendamment** — c'est
+   du sucre, pas une probabilité de groupe. Une règle portant son propre `p` l'emporte.
+4. Le nom du bloc préfixe les comportements produits : `infection/1`, `infection/2`. Le
+   `.nbd2` reste lisible et un groupe reste identifiable à la relecture.
+5. `activate infection` et `deactivate infection` depuis `modifiers` basculent tous les
+   comportements du bloc — c'est la raison d'être principale des blocs.
 
 ## 9. Compilation
 
@@ -212,33 +269,42 @@ pas celui du JSON.
 ## 12. Exemple complet
 
 ```
-grid 100 100
-update parallel
-seed 42
+declare
+  grid 100 100
+  seed 42
 
-agent Cell lime
-agent Virus crimson mob 1
-agent Debris grey
+  agent Cell lime
+  agent Virus crimson mob 1
+  agent Debris grey
 
-abstract Immune < Cell
-agent RestImmune < Immune
-agent ActImmune < Immune +Active
-tag Active
+  abstract Immune < Cell
+  agent RestImmune < Immune
+  agent ActImmune < Immune with Active
+  tag Active
 
-field IL2 diff 0.3 life 4 dirs 8
-Cell makes IL2 1.0
+  field IL2 diff 0.3 life 4 dirs 8
 
-Cell spawn if 3 Cell around
-Cell die if Cell around < 2 or Cell around > 3
-Immune -> ActImmune if IL2 > 1
-neighbour Virus -> Debris if Virus around >= 1; set IL2 0
+modifiers
+  every 50 steps: add 20 Virus in square (10,10)-(20,20)
+  at step 500: capture
+
+model
+  Cell makes IL2 1.0
+
+  growth:
+    Cell spawns when finds 3 Cell
+    Cell dies when finds Cell < 2 or finds Cell > 3
+
+  immunity:
+    Immune -> ActImmune when IL2 > 1
+    neighbour Virus -> Debris when finds Virus; set IL2 0
 
 start 500 Cell random
 start 20 Virus random
 ```
 
-Vingt lignes, deux comportements polymorphes, un champ, une action. Le même modèle en
-`.nbd2` fait plusieurs kilo-octets de JSON, dont l'essentiel est de la ponctuation.
+Vingt-quatre lignes : deux grains plus un type abstrait et un tag, un champ, deux blocs
+nommés, un modificateur périodique, l'état initial.
 
 ## 13. Niveau mécanique — la garantie de complétude
 
