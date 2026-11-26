@@ -74,8 +74,8 @@ Quatre sections, dans cet ordre, toutes facultatives sauf `declare` :
 Règles :
 
 - Les sections ne peuvent pas être déplacées. Une section vide est permise.
-- Un objet (`- …`) tient sur **une seule ligne**. Une règle trop longue se découpe en
-  plusieurs objets, ou passe au niveau mécanique.
+- Un objet commence par une puce et peut se poursuivre sur plusieurs lignes, à condition
+  que la continuation soit **explicite** (§4bis).
 - `-` et `*` sont équivalents ; `-` est recommandé.
 - Les commentaires utilisent `//` : le dièse est réservé aux titres.
 - Les lignes vides sont ignorées ; deux puces séparées par une ligne vide restent dans
@@ -85,6 +85,50 @@ Règles :
 Ce choix a une conséquence utile : l'indentation n'étant pas structurelle, un mélange
 d'espaces et de tabulations ne peut pas produire d'erreur invisible — le défaut classique
 des langages à indentation significative.
+
+## 4bis. Lignes longues
+
+Une puce peut courir sur plusieurs lignes, mais **jamais par simple indentation** : une
+indentation plus forte ne signifie rien, sinon on retombe sur le défaut des langages à
+indentation significative. La continuation est décidée par le lexique, selon trois
+règles.
+
+**1. La ligne suivante commence par un opérateur de liaison** : `and`, `or`, `;`, `,`,
+`)`. La puce se poursuit.
+
+```
+- neighbour Virus -> Debris when finds Cell > 0
+  and finds Virus
+  and IL2 < 0.1
+  ; set IL2 0
+  ; capture
+```
+
+**2. Une parenthèse reste ouverte à la fin de la ligne.** La puce se poursuit jusqu'à la
+parenthèse fermante.
+
+```
+- Cell -> Debris when (finds Cell < 2
+      or finds Virus > 3)
+```
+
+**3. Un `\` en fin de ligne.** Échappatoire pour les cas où aucune des deux règles ne
+s'applique — rare, mais il en faut une.
+
+Règles de lecture :
+
+- Les lignes vides et les commentaires `//` sont ignorés quand on cherche la
+  continuation : ils ne cassent ni ne prolongent un objet.
+- La puce est la seule à porter le `-` ; les lignes de continuation n'en portent pas.
+  Une seconde puce, elle, commence bien un nouvel objet.
+- Les erreurs citent la **première ligne** de l'objet, et l'analyse reprend à sa dernière
+  ligne — une règle multiligne ne décale donc pas les numéros suivants.
+- Le style recommandé aligne la continuation sous le texte de la puce, mais cette
+  indentation n'est qu'une convention de lecture.
+
+Pourquoi pas la règle inverse — « la ligne suivante est plus indentée donc elle
+continue » ? Parce qu'elle rend le sens dépendant d'un caractère invisible, et qu'une
+reformatage malheureux changerait alors la signification du fichier sans rien signaler.
 
 ## 5. declare — ce qui existe
 
@@ -392,12 +436,15 @@ que le sucre ne change pas la sémantique.
 
 ## immunity
 - Immune -> ActImmune when IL2 > 1
-- neighbour Virus -> Debris when finds Virus; set IL2 0
+- neighbour Virus -> Debris when finds Virus
+  and finds Cell > 0
+  ; set IL2 0
+  ; capture
 
 # start
 - 500 Cell random
 - 20 Virus random
 ```
 
-Vingt-quatre lignes utiles : deux grains plus un type abstrait et un tag, un champ, deux
-blocs nommés, un modificateur périodique, l'état initial.
+Vingt-cinq lignes utiles : deux grains plus un type abstrait et un tag, un champ, deux
+blocs nommés, une règle multiligne, un modificateur périodique, l'état initial.
