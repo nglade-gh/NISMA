@@ -8,6 +8,11 @@ script `NISMA` pour générer des simulations plus puissantes que l'interface gr
 **État** : projet développé et fonctionnel (WIP). Code C# compilable, sérialisation
 JSON/opérationnelle, tests passés. Nouveau : développement complet par l'assistant.
 
+**Langage** : `LANGAGE.md` (spécification), `GUIDE.md` (mode d'emploi du modélisateur),
+`NISMA_Lang/` (prototype du compilateur : script `.ni` → `.nbd2`) et `NISMA_Ide/`
+(atelier web avec coloration syntaxique). Lancer l'atelier :
+`dotnet run --project NISMA_Ide` puis <http://127.0.0.1:5080>.
+
 ---
 
 ## 1. Architecture du projet

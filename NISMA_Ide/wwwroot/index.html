@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NISMA — atelier</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">NISMA <span>atelier</span></div>
+    <select id="examples" title="Charger un exemple"></select>
+    <div class="grow"></div>
+    <span id="status" class="status">prêt</span>
+    <button id="compile" class="primary" title="Compiler le script (Ctrl+Entrée)">Compiler <kbd>Ctrl+↵</kbd></button>
+    <button id="download" disabled title="Enregistrer le .nbd2 (Ctrl+S)">Télécharger</button>
+  </header>
+
+  <main>
+    <section class="editor" id="editor">
+      <div class="gutter" id="gutter"></div>
+      <div class="code">
+        <pre id="highlight" class="highlight" aria-hidden="true"></pre>
+        <textarea id="source" spellcheck="false" autocapitalize="off" autocomplete="off"
+                  autocorrect="off" wrap="off" aria-label="Script NISMA"></textarea>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <nav class="tabs">
+        <button data-tab="summary" class="active">Résumé</button>
+        <button data-tab="json">.nbd2</button>
+        <button data-tab="problems">Problèmes <span id="problemCount" class="badge hidden">0</span></button>
+      </nav>
+
+      <div class="tab active" id="tab-summary">
+        <p class="empty">Compilez le script pour voir ce qu'il produit.</p>
+      </div>
+      <div class="tab" id="tab-json">
+        <pre id="json"></pre>
+      </div>
+      <div class="tab" id="tab-problems">
+        <ul id="problems"></ul>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="hint">
+    <code># section</code> · <code>## bloc</code> · <code>- objet</code> ·
+    <code>Ctrl+Entrée</code> compile · <code>Ctrl+S</code> enregistre
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

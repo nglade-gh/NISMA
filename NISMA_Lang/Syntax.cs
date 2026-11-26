@@ -5,9 +5,13 @@ public sealed class ScriptException : Exception
 {
     public int Line { get; }
 
+    /// <summary>Message seul, sans le préfixe de ligne : c'est ce qu'affiche un IDE.</summary>
+    public string Reason { get; }
+
     public ScriptException(int line, string message) : base($"ligne {line}: {message}")
     {
         Line = line;
+        Reason = message;
     }
 }
 
