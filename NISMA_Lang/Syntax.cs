@@ -70,6 +70,9 @@ public sealed record NothingCond : Cond;
 /// <summary><c>finds only Cell, Virus</c> : aucun type de voisin hors de la liste.</summary>
 public sealed record OnlyCond(IReadOnlyList<string> Types) : Cond;
 
+/// <summary>Rythme régulier : <c>every 3 steps</c> → <c>step % 3 == 0</c>.</summary>
+public sealed record PeriodCond(int Period) : Cond;
+
 /// <summary>Grandeur comparée : champ, âge ou pas. <paramref name="Near"/> = chez un voisin.</summary>
 public sealed record MeasureCond(string Name, string Op, double Value, bool Near) : Cond;
 

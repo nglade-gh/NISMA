@@ -573,6 +573,7 @@ public sealed class Compiler
         CountCond count => $"{CountExpression(count, line)}{count.Op}{count.Value}",
         NothingCond => "count(-1)==0",
         OnlyCond only => $"hasOnly({{{string.Join(",", only.Types.Select(t => ConcreteGrain(t, line).Id))}}})",
+        PeriodCond period => $"step % {period.Period} == 0",
         MeasureCond measure => MeasureFormula(measure, line),
         _ => throw new ScriptException(line, "condition non compilable"),
     };
@@ -644,10 +645,11 @@ public sealed class Compiler
     }
 
     /// <summary>Complète une condition par la durée de séjour de l'état, puis par « after ».</summary>
-    private static Cond? Guard(Cond? condition, int? stay, int? after)
+    private static Cond? Guard(Cond? condition, int? stay, int? after, int? period = null)
     {
         var parts = new List<Cond>();
         if (condition is not null) parts.Add(condition);
+        if (period.HasValue) parts.Add(new PeriodCond(period.Value));
         if (stay.HasValue) parts.Add(new MeasureCond("age", ">=", stay.Value, false));
         if (after.HasValue) parts.Add(new MeasureCond("age", ">=", after.Value, false));
         return parts.Count switch
@@ -677,7 +679,7 @@ public sealed class Compiler
                 throw new ScriptException(transition.Line, $"état « {from} » inconnu");
 
             stays.TryGetValue(from, out var stay);
-            var condition = Guard(transition.Condition, stay == 0 ? null : stay, transition.AfterSteps);
+            var condition = Guard(transition.Condition, stay == 0 ? null : stay, transition.AfterSteps, transition.Period);
 
             int? productId = null;
             string? to = null;
@@ -708,7 +710,7 @@ public sealed class Compiler
                 throw new ScriptException(reaction.Line, $"état « {from} » inconnu");
 
             stays.TryGetValue(from, out var stay);
-            var condition = Guard(reaction.Condition, stay == 0 ? null : stay, null);
+            var condition = Guard(reaction.Condition, stay == 0 ? null : stay, null, reaction.Period);
             var product = ResolveStateName(reaction.Process, reaction.To, reaction.Line);
             var productId = _types[product].Id;
 

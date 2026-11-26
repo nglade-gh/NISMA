@@ -419,9 +419,10 @@ public sealed class Parser
         if (head.Is("becomes"))
         {
             var target = ExpectWord(rule, 1, line);
-            var condition = ReadTrailingCondition(rule, 2, line);
+            var (period, nextToken) = ReadPeriod(rule, 2, line);
+            var condition = ReadTrailingCondition(rule, nextToken, line);
             script.Declarations.Add(new TransitionDecl(line, process, state, target, condition, null,
-                TransitionKind.Becomes));
+                TransitionKind.Becomes, period));
             return;
         }
 
@@ -453,12 +454,24 @@ public sealed class Parser
             if (rule.Count <= cursor + 1 || !rule[cursor + 1].Is("becomes"))
                 throw new ScriptException(line, "attendu « becomes » après le type du voisin");
             var to = ExpectWord(rule, cursor + 2, line);
-            var condition = ReadTrailingCondition(rule, cursor + 3, line);
-            script.Declarations.Add(new StateReactionDecl(line, process, state, neighbour, to, condition));
+            var (period, next) = ReadPeriod(rule, cursor + 3, line);
+            var condition = ReadTrailingCondition(rule, next, line);
+            script.Declarations.Add(new StateReactionDecl(line, process, state, neighbour, to, condition, period));
             return;
         }
 
         throw new ScriptException(line, $"règle de processus inconnue « {head.Text} »");
+    }
+
+    /// <summary>Lit « every N steps », ou rien.</summary>
+    private static (int? Period, int Next) ReadPeriod(List<Tok> tokens, int index, int line)
+    {
+        if (index >= tokens.Count || !tokens[index].Is("every")) return (null, index);
+        var period = ExpectInt(tokens, index + 1, line);
+        if (period <= 0) throw new ScriptException(line, "la période doit être strictement positive");
+        var cursor = index + 2;
+        if (cursor < tokens.Count && tokens[cursor].Is("steps")) cursor++;
+        return (period, cursor);
     }
 
     /// <summary>Lit « when CONDITION » à partir de l'index, ou rien du tout.</summary>

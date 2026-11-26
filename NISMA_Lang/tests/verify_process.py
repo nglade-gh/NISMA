@@ -31,7 +31,7 @@ def age_for_source(source, current_age, ages, neighbours):
     return 0
 
 
-def parse_formula(formula, cell, grid, ages, width, height, grain_index):
+def parse_formula(formula, cell, grid, ages, width, height, grain_index, tick):
     """Évalue les formules simples du modèle : count(id), age, sums, parenthèses."""
     x, y = cell
     counts = {gid: 0 for gid in grain_index}
@@ -50,13 +50,14 @@ def parse_formula(formula, cell, grid, ages, width, height, grain_index):
     text = re.sub(r"count\(\s*(-?\d+)\s*\)",
                   lambda m: str(sum(counts.values()) if int(m.group(1)) < 0 else counts.get(int(m.group(1)), 0)),
                   text)
+    text = re.sub(r"\bstep\b", str(tick), text)
     text = re.sub(r"\bage\b", str(ages[y * width + x]), text)
     text = text.replace("&&", " and ").replace("||", " or ")
     text = re.sub(r"!(?!=)", " not ", text)
     return bool(eval(text, {"__builtins__": {}}, {}))
 
 
-def holds(behaviour, cell, grid, ages, width, height, grain_index):
+def holds(behaviour, cell, grid, ages, width, height, grain_index, tick):
     x, y = cell
     age = ages[y * width + x]
 
@@ -73,7 +74,7 @@ def holds(behaviour, cell, grid, ages, width, height, grain_index):
             return False
 
     if behaviour.get("formula"):
-        return parse_formula(behaviour["formula"], cell, grid, ages, width, height, grain_index)
+        return parse_formula(behaviour["formula"], cell, grid, ages, width, height, grain_index, tick)
 
     return True
 
@@ -104,7 +105,7 @@ def compare(actual, op, expected):
     }[op]
 
 
-def step(grid, ages, behaviours, width, height, grain_index):
+def step(grid, ages, behaviours, width, height, grain_index, tick):
     birth = list(grid)
     birth_age = list(ages)
 
@@ -121,14 +122,14 @@ def step(grid, ages, behaviours, width, height, grain_index):
                     # génération spontanée : la case doit être vide
                     if agent >= 0 or product is None:
                         continue
-                    if holds(behaviour, (x, y), grid, ages, width, height, grain_index):
+                    if holds(behaviour, (x, y), grid, ages, width, height, grain_index, tick):
                         birth[index] = product
                         birth_age[index] = 0
                     continue
 
                 if agent != main:
                     continue
-                if not holds(behaviour, (x, y), grid, ages, width, height, grain_index):
+                if not holds(behaviour, (x, y), grid, ages, width, height, grain_index, tick):
                     continue
 
                 source = behaviour.get("sourceReactive")
@@ -194,7 +195,7 @@ def main():
         for i in range(len(ages)):
             if ages[i] >= 0:
                 ages[i] += 1
-        grid, ages = step(grid, ages, behaviours, width, height, grain_index)
+        grid, ages = step(grid, ages, behaviours, width, height, grain_index, tick)
         state = timeline.get(grid[5 * width + 5], "empty")
         seen.append((tick, state))
 

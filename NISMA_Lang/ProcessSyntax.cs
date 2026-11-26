@@ -29,7 +29,8 @@ public sealed record TransitionDecl(
     string? To,
     Cond? Condition,
     int? AfterSteps,
-    TransitionKind Kind) : Declaration(Line);
+    TransitionKind Kind,
+    int? Period = null) : Declaration(Line);
 
 /// <summary>Effet permanent d'un état : production, influence, perméabilité, mobilité.</summary>
 public sealed record StateEffectDecl(int Line, string Process, string State, string Kind, string Target, double Value)
@@ -42,7 +43,8 @@ public sealed record StateReactionDecl(
     string State,
     string Neighbour,
     string To,
-    Cond? Condition) : Declaration(Line);
+    Cond? Condition,
+    int? Period = null) : Declaration(Line);
 
 /// <summary>Une règle écrite dans un état, pour l'affichage des erreurs.</summary>
 public static class ProcessNames

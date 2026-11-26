@@ -31,9 +31,11 @@ ligne 21 : TransitionDecl → comportement « Infected -> Sick »
 
 et une déclaration non traduite fait échouer la compilation.
 
-Trois choses sont hors de portée, non par choix mais par cible : les phases parallèles dans
-un état, la mémoire par agent, les événements datés. Le §17 dit ce que la forme `# process`
-en fait ; `docs/revue-langages.md` §22 dit pourquoi c'est la bonne frontière.
+Ce que NetBioDyn sait porter du temps est plus large qu'on ne le croit, et le langage le
+suit (cf. §17bis) : les **rythmes réguliers**, les **échéances relatives à l'agent** et les
+**actions spatio-temporelles** des modificateurs sont tous traduisibles. Ce qui reste hors
+de portée est plus étroit : une **file d'échéances partagée** entre agents, où l'ordre des
+dates compte, et le temps réel. Le §17bis le dit ligne par ligne.
 
 ---
 
@@ -595,10 +597,43 @@ Elle ne règle pas :
 - **les phases parallèles** dans un même état (faire deux choses à des rythmes différents) ;
 - **la mémoire par agent** (valeur au pas précédent, compteur propre) : le moteur ne
   connaît que le grain et l'âge ;
-- **les événements** (réveil à une date, file d'échéances) : le temps reste le pas ;
+- **la file d'échéances partagée** (deux agents dont les dates s'entrelacent et dont
+  l'ordre de traitement change le résultat) : le moteur balaie la grille, il ne saute pas
+  d'une date à l'autre ;
 - **les états qui ne sont pas des grains** : aujourd'hui un état change le grain, donc
   l'identité de l'agent — un état qui ne devrait rien changer d'autre coûte une
   transformation.
 
 Ces quatre points sont exactement la frontière entre (A) macro-syntaxe et (B) langage
 autonome décrite dans `docs/revue-langages.md` §22.
+
+
+## 17bis. Événements datés : ce qui est représentable
+
+Trois familles, trois traductions. La distinction n'est pas lexicale : elle décide de ce
+que le langage accepte.
+
+| Famille | Exemple | Traduction | Statut |
+|---|---|---|---|
+| **Rythme régulier** | `becomes Active every 3 steps` | `step % 3 == 0` dans la condition du comportement | accepté |
+| Rythme global | `every 50 steps: add 20 Virus in square (10,10)-(20,20)` | modificateur, formule `step % 50 == 0`, action dans la zone | accepté |
+| **Échéance relative à l'agent** | `stays 4 steps`, `dies after 6 steps` | `age >= 4`, `age >= 6` | accepté |
+| Date absolue | `at step 30: capture` | modificateur, formule `step == 30` | accepté |
+| **Action spatio-temporelle** | `when IL2 < 0.01 everywhere: pause` | modificateur dont la formule mêle `step`, `field`, `count` | accepté |
+| File d'échéances partagée | deux agents réveillés à des dates entrelacées, l'ordre changeant le résultat | — | **refusé** |
+| Temps réel | `after 3.5 seconds` | — | **refusé** |
+
+Le rythme d'un état se vérifie : `scripts/cycle.ni` déclare une cellule qui ne s'active que
+tous les 3 pas et reste active 2 pas ; `verify_cycle.py` rejoue le modèle compilé et mesure
+les écarts réels — `[3, 3, 3, 3, 3, 3, 3]` — et la durée de chaque activation — 2 pas.
+
+```
+chronologie : 1:q 2:q 3:A 4:A 5:q 6:A 7:A 8:q 9:A 10:A ...
+activations aux pas : [3, 6, 9, 12, 15, 18, 21, 24]
+rythme respecté : activations tous les 3 pas, durée 2 pas
+```
+
+La différence entre « rythme » et « file d'échéances » est celle-ci : un rythme est une
+**propriété du comportement** (`step % 3 == 0` est évalué pour chaque cellule, indépendamment),
+une file est un **objet partagé** dont l'état est l'ordre des dates. Le premier se traduit
+par une garde, le second demanderait une structure de données dans le moteur.

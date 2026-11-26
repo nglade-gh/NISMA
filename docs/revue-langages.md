@@ -845,6 +845,9 @@ langage autonome avec son propre moteur : c'est un langage dont **la surface est
 processus** et **le sens entièrement réductible** à la cible. La phrase « reste infectée
 4 pas » est une description du phénomène ; `age >= 4` est sa traduction, pas sa définition.
 
-Cette position a un coût assumé : tout ce qui demanderait une mémoire, une horloge ou une
-échéance est hors langage. Elle a un avantage décisif : un modèle qui compile s'exécute
+Cette position a un coût assumé, mais plus étroit qu'il n'y paraît : les rythmes réguliers
+(`step % N`), les échéances relatives à l'agent (`age >= N`) et les actions
+spatio-temporelles des modificateurs sont traduisibles. Ce qui reste dehors est la **file
+d'échéances partagée** — un objet dont l'état est l'ordre des dates — et la mémoire par
+agent. Elle a un avantage décisif : un modèle qui compile s'exécute
 réellement, et le compilateur peut le prouver ligne par ligne (`--audit`).

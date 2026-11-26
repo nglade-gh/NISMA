@@ -284,6 +284,8 @@ Trois choses à savoir :
   état remet l'âge à zéro : la durée mesure le séjour, pas la vie de la cellule.
 - dans `# start`, `Cell` désigne le premier état déclaré : `- 800 Cell random` peuple des
   cellules saines.
+- un rythme s'écrit dans l'état : `- becomes Active every 3 steps` devient
+  `step % 3 == 0` sur cette sortie. Pour un rythme global, on utilise un modificateur.
 
 CE QUI N'EST PAS ENCORE LÀ : phases parallèles dans un état, mémoire par agent, événements
 datés. Ce sont les limites du moteur, pas celles de la syntaxe.
