@@ -62,185 +62,110 @@ meilleur test de complétude du langage.
 
 ## 4. Déclarations
 
+Un mot par chose, pas d'articles. Les valeurs par défaut sont celles de NetBioDyn et
+s'écrivent seulement si elles diffèrent.
+
 ```
-agent Cell colour lime
-agent Virus colour crimson mobility 1.0
-agent Debris colour grey
+grid 100 100
+update parallel
+seed 42
 
-abstract Lymphocyte is a Cell
-abstract Macrophage is a Cell
+agent Cell lime
+agent Virus crimson mob 1
+agent Debris grey
 
+abstract Immune < Cell
+agent RestImmune < Immune
+agent ActImmune < Immune +Active
 tag Active
-tag Infected
 
-agent ActiveLymphocyte is a Lymphocyte with tag Active
-agent InfectedCell is a Cell with tag Infected
+field IL2 diff 0.3 life 4 dirs 8
+field IFN diff 0.2 life 6 dirs 4 opacity 60
 
-field IL2 diffusion 0.3 half-life 4 directions 8
-field IFN diffusion 0.2 half-life 6 opacity 60
-
-Cell produces IL2 1.0
+Cell makes IL2 1.0
 Cell absorbs IL2 0.5
+Cell lets IL2 0.2
 ```
 
-- `agent` : un grain **concret**, seul type qui apparaît dans le fichier produit.
-  Attributs facultatifs : `colour`, `mobility`, `half-life`, `description`.
-- `abstract` : un type qui n'est **jamais instancié** et n'apparaît pas dans le
-  `.nbd2`. Il sert uniquement à regrouper des agents concrets.
-- `tag` : une caractéristique énumérée, sans contenu. Un agent concret peut en
-  porter plusieurs.
-- Un agent est soit racine, soit sous-type d'**un seul** type abstrait. Pas
-  d'héritage multiple : les conflits de résolution coûteraient plus qu'ils ne
-  rapportent.
-- `field` : `diffusion` (0–1), `half-life` (pas), `directions` (4 ou 8),
-  `opacity`, `toric` (défaut vrai).
-- `produces` / `absorbs` : production et influence d'un champ par un agent.
+| Forme | Sens |
+|---|---|
+| `agent NOM COULEUR` | grain concret ; `mob`, `life`, `icon`, `desc` en option |
+| `abstract NOM < PARENT` | type abstrait, jamais écrit dans le fichier |
+| `agent NOM < PARENT +Tag1 +Tag2` | sous-type concret, un seul parent |
+| `tag NOM` | caractéristique énumérée |
+| `field NOM diff D life L dirs 4\|8` | champ ; `opacity`, `wall` en option |
+| `A makes F V` | production du champ F par A, valeur V |
+| `A absorbs F V` | influence du champ F sur A |
+| `A lets F V` | perméabilité de A au champ F |
 
 ## 5. Comportements
 
-Quatre formes, et quatre seulement.
-
-### 5.1 Transformation
+Une ligne par comportement. La forme est toujours la même :
 
 ```
-when a Cell has exactly 3 neighbours of type Cell
-    a Cell appears
-
-when a Cell has fewer than 2 or more than 3 neighbours of type Cell
-    the Cell disappears
-
-when IL2 at the cell is above 1.0
-    any Lymphocyte becomes ActiveLymphocyte
+SUJET VERBE [OBJET] [if CONDITIONS] [p PROBABILITE] [; ACTIONS]
 ```
 
-- `a <Type> appears` : la cellule visée est vide, l'agent apparaît (génération
-  spontanée).
-- `the <agent> disappears` : l'agent meurt.
-- `<A> becomes <B>` : transformation sur place ; `A` est le réactif principal,
-  `B` le produit. `it` désigne l'agent principal si le nom est omis.
-
-### 5.2 Réaction avec un voisin
-
-```
-when a Cell has at least 1 neighbour of type Virus
-    a Virus neighbour becomes Debris
-```
-
-Une ligne de réaction : un voisin d'un type donné devient un autre type. Le
-qualificatif est `a` (un voisin quelconque) ou `every` (tous les voisins
-correspondants). L'âge du produit est hérité du voisin transformé, comme dans
-NetBioDyn.
-
-### 5.3 Conditions
-
-Les conditions se cumulent avec `and`, s'alternent avec `or`, et se nient avec
-`not`. Trois familles :
+| Sujet | Verbe | Sens |
+|---|---|---|
+| `Cell` | `spawn` | génération spontanée : une cellule vide devient Cell |
+| `Cell` | `die` | l'agent disparaît |
+| `A -> B` | — | transformation : A devient B |
+| `neighbour A -> B` | — | une ligne de réaction : un voisin A devient B |
 
 ```
-has exactly 3 neighbours of type Cell
-has at least 2 neighbours of any type
-has no neighbour of type Debris
-has only neighbours of type Cell, Debris
-IL2 at the cell is above 1.0
-IL2 at a neighbour is below 0.2
-age of the agent is above 10
-age of the agent is a multiple of 5
-step is 10
+Cell spawn if 3 Cell around
+Cell die if Cell around < 2 or Cell around > 3
+Immune -> ActImmune if IL2 > 1
+neighbour Virus -> Debris if Virus around >= 1
+Cell -> Debris p 0.1 if age > 10
+neighbour Virus -> Debris if Virus around >= 1; set IL2 0
 ```
 
-Les deux dernières formes de comptage (`has only`, `has exactly` avec plusieurs
-types) s'appuient sur les prédicats `hasOnly` / `hasExactly` de NetBioDyn : c'est
-précisément ce que le langage rend utilisable sans écrire de formule.
+- `Immune` étant abstrait, `Immune -> ActImmune` s'étend en un comportement par grain
+  concret de `Immune` (§6). Le mot `any` reste disponible pour insister.
+- Le produit d'une transformation doit être un grain **concret** ; sinon erreur.
+- `p 0.3` vaut 1 par défaut.
+- Les actions suivent `;`, séparées par `;`.
 
-### 5.4 Actions
+## 6. Conditions
 
-```
-when a Virus has at least 3 neighbours of type Virus
-    a Virus neighbour becomes Debris
-    and set IL2 at the cell to 0
-    and add 2 Virus at random in the square (10,10)-(20,20)
-```
+Le vocabulaire tient en une douzaine de formes :
 
-Actions disponibles : `set <field> at <where> to <value>`, `add <field> ... by`,
-`add N <agent> at random in the square ...`, `clear <field> ...`. Les méta-actions
-de NetBioDyn (`Pause`, `Capture`, `Select`…) sont accessibles par leur nom, en
-minuscules : `pause`, `capture`, `select`.
+| Forme | Sens |
+|---|---|
+| `3 Cell around` | exactement 3 voisins de type Cell |
+| `Cell around < 2` | moins de deux |
+| `Cell around >= 1` | au moins un |
+| `Cell around` | au moins un (raccourci) |
+| `around Cell Virus only` | aucun type hors de ceux-là |
+| `IL2 > 1` | valeur du champ sur la cellule courante |
+| `IL2@near > 0.2` | valeur du champ chez un voisin |
+| `age > 10` | âge de l'agent |
+| `step is 10` | numéro de pas |
+| `not` , `and` , `or` , parenthèses | combinaison |
 
-### 5.5 Probabilité
-
-```
-when ... probability 0.3
-```
-
-Par défaut 1. Une probabilité s'applique **par comportement**, jamais par agent
-touché.
-
-## 6. Polymorphisme par les tags
-
-C'est la raison d'être du langage.
-
-```
-abstract Cell
-tag Active
-agent RestingCell is a Cell
-agent ActiveCell is a Cell with tag Active
-
-when IL2 at the cell is above 1.0
-    any Cell becomes Active
-
-when a Cell has at least 3 neighbours of type Active
-    a Cell neighbour becomes Infected
-```
-
-**`any Cell`** désigne n'importe quel agent concret de l'extension de `Cell` —
-c'est-à-dire `RestingCell` et `ActiveCell`. Le comportement est **étendu** en un
-comportement par agent concret.
-
-**`becomes Active`** exige un produit unique. Deux cas :
-
-- un seul agent concret porte le tag → il est choisi ;
-- plusieurs agents le portent → **erreur**, avec la liste des candidats :
-
-```
-error line 12: "becomes Active" is ambiguous: ActiveCell and ActiveTcell both
-carry the tag Active. Name the agent you mean, or give the tag to a single one.
-```
-
-### Règles d'expansion
-
-1. Seuls le réactif principal et les réactifs de ligne sont polymorphes. Un
-   **produit ne l'est jamais** : c'est la source de l'ambiguïté, donc une erreur.
-2. Un comportement polymorphe produit autant de comportements concrets que
-   l'extension le demande, et le compilateur **annonce le compte** :
-   `behaviour at line 12 expands to 3 concrete behaviours`.
-3. La probabilité est conservée telle quelle : une cellule ne portant qu'un grain,
-   un seul des comportements étendus peut s'appliquer à elle par pas.
-4. Les identifiants sont attribués **après expansion**, dans l'ordre de
-   déclaration. Deux compilations du même fichier donnent le même `.nbd2`.
-5. Les types abstraits et les tags ne sont **jamais** écrits dans le fichier.
+Les comptages portent sur les huit voisins ; la case centrale n'est jamais comptée.
+`around Cell Virus only` s'appuie sur `hasOnly` de NetBioDyn, `3 Cell around` sur
+`count(0) == 3`.
 
 ## 7. État initial
 
 ```
-start with 200 Cell at random
-start with Cell at (5,5)
-start with Virus from stencil "glider.rle" at (10,10)
+start 200 Cell random
+start Cell at 5 5
+start Virus from "glider.rle" at 10 10
 ```
 
-Trois formes : densité aléatoire, position explicite, motif importé (RLE, `.cells`
-ou matrice — les formats que NetBioDyn accepte déjà). Aucun autre placement n'est
-inventé : s'il faut un motif complexe, on l'écrit dans un fichier de stencil.
+Trois formes seulement : densité aléatoire, position explicite, motif importé (RLE,
+`.cells`, matrice — les formats que NetBioDyn accepte déjà). Un motif plus complexe
+s'écrit dans un fichier de stencil, pas dans le script.
 
 ## 8. Réglages
 
-```
-grid 100 x 100
-update parallel
-seed 42
-```
-
-`update` vaut `parallel` (défaut) ou `sequential`. `seed` rend la génération
-reproductible ; sans elle, NISMA choisit une graine et l'écrit dans le fichier.
+`grid`, `update` et `seed` figurent en tête du fichier (§4). `update` vaut `parallel`
+par défaut, `sequential` sinon. Sans `seed`, NISMA en tire une et l'écrit dans le
+fichier, pour que deux générations du même script soient identiques.
 
 ## 9. Compilation
 
@@ -287,39 +212,33 @@ pas celui du JSON.
 ## 12. Exemple complet
 
 ```
-grid 100 x 100
+grid 100 100
 update parallel
 seed 42
 
-agent Cell colour lime
-agent Virus colour crimson mobility 1.0
-agent Debris colour grey
+agent Cell lime
+agent Virus crimson mob 1
+agent Debris grey
 
-abstract Immune is a Cell
+abstract Immune < Cell
+agent RestImmune < Immune
+agent ActImmune < Immune +Active
 tag Active
 
-agent RestingImmune is an Immune
-agent ActiveImmune is an Immune with tag Active
+field IL2 diff 0.3 life 4 dirs 8
+Cell makes IL2 1.0
 
-field IL2 diffusion 0.3 half-life 4 directions 8
-Cell produces IL2 1.0
+Cell spawn if 3 Cell around
+Cell die if Cell around < 2 or Cell around > 3
+Immune -> ActImmune if IL2 > 1
+neighbour Virus -> Debris if Virus around >= 1; set IL2 0
 
-when a Cell has exactly 3 neighbours of type Cell
-    a Cell appears
-
-when a Cell has fewer than 2 or more than 3 neighbours of type Cell
-    the Cell disappears
-
-when IL2 at the cell is above 1.0
-    any Immune becomes ActiveImmune
-
-when a Cell has at least 1 neighbour of type Virus
-    a Virus neighbour becomes Debris
-    and set IL2 at the cell to 0
-
-start with 500 Cell at random
-start with 20 Virus at random
+start 500 Cell random
+start 20 Virus random
 ```
+
+Vingt lignes, deux comportements polymorphes, un champ, une action. Le même modèle en
+`.nbd2` fait plusieurs kilo-octets de JSON, dont l'essentiel est de la ponctuation.
 
 ## 13. Niveau mécanique — la garantie de complétude
 
