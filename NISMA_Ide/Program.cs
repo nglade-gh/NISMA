@@ -20,7 +20,6 @@ public static class Program
         });
 
         var app = builder.Build();
-        app.UseDefaultFiles();
         // Aucun cache sur les fichiers de l'interface : sans cela, le navigateur garde un
         // app.js d'une version précédente après une mise à jour du serveur, l'ancien code
         // s'exécute et les nouveaux boutons restent muets.
@@ -31,6 +30,26 @@ public static class Program
                 context.Context.Response.Headers["Cache-Control"] = "no-store, must-revalidate";
                 context.Context.Response.Headers["Pragma"] = "no-cache";
             },
+        });
+
+        // Page d'accueil servie par le code, pas par le fichier statique : les deux feuilles
+        // sont référencées avec l'empreinte de leur date de modification. Un app.js modifié
+        // change d'URL, donc le navigateur ne peut pas réutiliser l'ancien — un F5 qui
+        // revalide seulement le document ne suffit pas à renouveler les sous-ressources.
+        app.MapGet("/", () =>
+        {
+            var root = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+            var index = Path.Combine(root, "index.html");
+            if (!File.Exists(index)) return Results.NotFound();
+
+            var html = File.ReadAllText(index);
+            foreach (var asset in new[] { "app.css", "app.js" })
+            {
+                var file = Path.Combine(root, asset);
+                var stamp = File.Exists(file) ? File.GetLastWriteTimeUtc(file).Ticks : 0;
+                html = html.Replace($"\"{asset}\"", $"\"{asset}?v={stamp}\"");
+            }
+            return Results.Content(html, "text/html; charset=utf-8");
         });
 
         app.MapGet("/api/health", () => Results.Ok(new { ok = true, name = "nisma-ide", version = 1 }));
