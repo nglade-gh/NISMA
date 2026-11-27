@@ -368,7 +368,10 @@
 
   function openAbout() {
     if (!aboutDialog) return;
-    if (!aboutDialog.open) aboutDialog.showModal();
+    if (!aboutDialog.open) {
+      if (typeof aboutDialog.showModal === 'function') aboutDialog.showModal();
+      else aboutDialog.setAttribute('open', 'open');
+    }
     if (aboutAsked) return;
     aboutAsked = true;
     fetch('/api/about')

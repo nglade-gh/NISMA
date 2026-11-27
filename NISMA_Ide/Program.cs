@@ -21,7 +21,17 @@ public static class Program
 
         var app = builder.Build();
         app.UseDefaultFiles();
-        app.UseStaticFiles();
+        // Aucun cache sur les fichiers de l'interface : sans cela, le navigateur garde un
+        // app.js d'une version précédente après une mise à jour du serveur, l'ancien code
+        // s'exécute et les nouveaux boutons restent muets.
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            OnPrepareResponse = context =>
+            {
+                context.Context.Response.Headers["Cache-Control"] = "no-store, must-revalidate";
+                context.Context.Response.Headers["Pragma"] = "no-cache";
+            },
+        });
 
         app.MapGet("/api/health", () => Results.Ok(new { ok = true, name = "nisma-ide", version = 1 }));
 
