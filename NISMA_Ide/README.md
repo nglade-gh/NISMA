@@ -41,6 +41,25 @@ compilation côté navigateur.
   contenant le binaire et la date dans le fichier de l'assemblage ; si git est absent, le
   commit est annoncé « inconnu » plutôt qu'inventé.
 
+## Aide et tutoriels
+
+L'onglet **Aide** affiche, dans l'interface, les deux textes de référence du dépôt :
+`GUIDE.md` (guide du modélisateur) et `LANGAGE.md` (référence du langage). Le serveur les
+lit sur le disque et les rend en HTML — il n'y a aucune copie dans `wwwroot`, donc l'aide
+affichée est exactement celle de l'arbre, et modifier un texte suffit à le voir changer.
+
+Le bouton **Tutoriel**, à côté de la liste des exemples, ouvre une fenêtre à deux colonnes :
+les tutoriels à gauche, le texte à droite. Les cinq tutoriels de `NISMA/tutorials/`
+apprennent le langage dans l'ordre — premier modèle, champs, types et tags, processus,
+modificateurs. Chaque modèle complet porte un bouton **Ouvrir dans l'éditeur** : le script
+est chargé dans l'éditeur et la fenêtre se ferme, il ne reste qu'à compiler.
+
+Les deux pages viennent des routes `GET /api/help`, `GET /api/tutorials` et
+`GET /api/tutorials/{id}`. Le rendu Markdown est fait par `Markdown.cs`, une centaine de
+lignes écrites à la main pour le sous-ensemble réellement employé par la documentation
+(titres, listes, tableaux, blocs de code, gras, italique, liens) : pas de dépendance
+ajoutée.
+
 ## Architecture
 
 ```

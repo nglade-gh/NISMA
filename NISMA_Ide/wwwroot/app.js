@@ -146,6 +146,7 @@
     for (var j = 0; j < tabs.length; j++) {
       tabs[j].classList.toggle('active', tabs[j].id === 'tab-' + name);
     }
+    if (name === 'help') loadHelp();
   }
 
   // ---------------------------------------------------------------- compilation
@@ -359,6 +360,132 @@
       ''
     ].join('\n');
   }
+
+  /* ---- aide du langage -------------------------------------------------- */
+
+  var helpNav = document.getElementById('help-nav');
+  var helpBody = document.getElementById('help-body');
+  var helpTopics = null;
+
+  function showHelpTopic(index) {
+    if (!helpTopics || !helpTopics[index]) return;
+    helpBody.innerHTML = helpTopics[index].html;
+    var chips = helpNav.querySelectorAll('button');
+    for (var i = 0; i < chips.length; i++) chips[i].classList.toggle('active', i === index);
+  }
+
+  function loadHelp() {
+    if (helpTopics) return;
+    helpTopics = [];
+    fetch('/api/help')
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        helpTopics = data.topics || [];
+        helpNav.innerHTML = '';
+        for (var i = 0; i < helpTopics.length; i++) {
+          var chip = document.createElement('button');
+          chip.textContent = helpTopics[i].title;
+          chip.setAttribute('data-topic', String(i));
+          chip.addEventListener('click', function () {
+            showHelpTopic(parseInt(this.getAttribute('data-topic'), 10));
+          });
+          helpNav.appendChild(chip);
+        }
+        showHelpTopic(0);
+      })
+      .catch(function () {
+        helpBody.innerHTML = '<p class="empty">Aide indisponible : le serveur ne répond pas.</p>';
+      });
+  }
+
+  /* ---- tutoriels -------------------------------------------------------- */
+
+  var tutorialButton = document.getElementById('tutorials');
+  var tutorialDialog = document.getElementById('tutorial-dialog');
+  var tutorialList = document.getElementById('tutorial-list');
+  var tutorialContent = document.getElementById('tutorial-content');
+  var tutorialsAsked = false;
+
+  function openDialog(dialog) {
+    if (!dialog || dialog.open) return;
+    if (typeof dialog.showModal === 'function') dialog.showModal();
+    else dialog.setAttribute('open', 'open');
+  }
+
+  function useScript(code) {
+    source.value = code.replace(/\s+$/, '') + '\n';
+    render();
+    save();
+    if (tutorialDialog && tutorialDialog.open) tutorialDialog.close();
+    setStatus('script chargé dans l\'éditeur');
+  }
+
+  /* Un bouton sur chaque modèle complet : le tutoriel montre, l'éditeur essaie. */
+  function addEditorButtons(root) {
+    var blocks = root.querySelectorAll('pre[data-lang="ni"]');
+    for (var i = 0; i < blocks.length; i++) {
+      (function (pre) {
+        var box = document.createElement('div');
+        box.className = 'code-box';
+        pre.parentNode.insertBefore(box, pre);
+        box.appendChild(pre);
+        var button = document.createElement('button');
+        button.className = 'code-open';
+        button.textContent = 'Ouvrir dans l\'éditeur';
+        button.addEventListener('click', function () { useScript(pre.textContent); });
+        box.appendChild(button);
+      })(blocks[i]);
+    }
+  }
+
+  function showTutorial(id, item) {
+    var items = tutorialList.querySelectorAll('button');
+    for (var i = 0; i < items.length; i++) items[i].classList.toggle('active', items[i] === item);
+    tutorialContent.innerHTML = '<p class="empty">Chargement…</p>';
+    fetch('/api/tutorials/' + encodeURIComponent(id))
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        tutorialContent.innerHTML = data.html;
+        tutorialContent.scrollTop = 0;
+        addEditorButtons(tutorialContent);
+      })
+      .catch(function () {
+        tutorialContent.innerHTML = '<p class="empty">Tutoriel indisponible.</p>';
+      });
+  }
+
+  function loadTutorials() {
+    if (tutorialsAsked) return;
+    tutorialsAsked = true;
+    fetch('/api/tutorials')
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        var list = data.tutorials || [];
+        tutorialList.innerHTML = '';
+        for (var i = 0; i < list.length; i++) {
+          (function (tutoriel, first) {
+            var item = document.createElement('button');
+            item.className = 'tutorial-item';
+            var title = document.createElement('strong');
+            title.textContent = tutoriel.title;
+            var summary = document.createElement('span');
+            summary.textContent = tutoriel.summary;
+            item.appendChild(title);
+            item.appendChild(summary);
+            item.addEventListener('click', function () { showTutorial(tutoriel.id, item); });
+            tutorialList.appendChild(item);
+            if (first) showTutorial(tutoriel.id, item);
+          })(list[i], i === 0);
+        }
+        if (!list.length) tutorialList.innerHTML = '<p class="empty">Aucun tutoriel.</p>';
+      })
+      .catch(function () { tutorialList.innerHTML = '<p class="empty">Liste indisponible.</p>'; });
+  }
+
+  if (tutorialButton) tutorialButton.addEventListener('click', function () {
+    openDialog(tutorialDialog);
+    loadTutorials();
+  });
 
   /* ---- à propos ---------------------------------------------------------- */
 

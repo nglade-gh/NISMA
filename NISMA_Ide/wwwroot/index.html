@@ -10,6 +10,7 @@
   <header class="bar">
     <button id="about" class="brand" title="À propos de NISMA">NISMA <span>atelier</span></button>
     <select id="examples" title="Charger un exemple"></select>
+    <button id="tutorials" title="Apprendre le langage pas à pas">Tutoriel</button>
     <div class="grow"></div>
     <span id="status" class="status">prêt</span>
     <button id="compile" class="primary" title="Compiler le script (Ctrl+Entrée)">Compiler <kbd>Ctrl+↵</kbd></button>
@@ -31,6 +32,7 @@
         <button data-tab="summary" class="active">Résumé</button>
         <button data-tab="json">.nbd2</button>
         <button data-tab="problems">Problèmes <span id="problemCount" class="badge hidden">0</span></button>
+        <button data-tab="help">Aide</button>
       </nav>
 
       <div class="tab active" id="tab-summary">
@@ -42,6 +44,12 @@
       <div class="tab" id="tab-problems">
         <ul id="problems"></ul>
       </div>
+      <div class="tab" id="tab-help">
+        <nav class="doc-nav" id="help-nav"></nav>
+        <article class="doc" id="help-body">
+          <p class="empty">Chargement de l'aide…</p>
+        </article>
+      </div>
     </aside>
   </main>
 
@@ -49,6 +57,21 @@
     <code># section</code> · <code>## bloc</code> · <code>- objet</code> ·
     <code>Ctrl+Entrée</code> compile · <code>Ctrl+S</code> enregistre
   </footer>
+
+  <dialog id="tutorial-dialog" class="tutorial" aria-labelledby="tutorial-title">
+    <header class="tutorial-head">
+      <h2 id="tutorial-title">Tutoriels</h2>
+      <form method="dialog"><button class="about-close" aria-label="Fermer">×</button></form>
+    </header>
+    <div class="tutorial-body">
+      <nav class="tutorial-list" id="tutorial-list">
+        <p class="empty">Chargement…</p>
+      </nav>
+      <article class="doc" id="tutorial-content">
+        <p class="empty">Choisissez un tutoriel à gauche.</p>
+      </article>
+    </div>
+  </dialog>
 
   <dialog id="about-dialog" class="about" aria-labelledby="about-title">
     <form method="dialog">

@@ -300,6 +300,167 @@ main {
   border-radius: 3px;
 }
 
+/* ---------------- aide et tutoriels ---------------- */
+
+.tab.active#tab-help {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.doc-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  flex: 0 0 auto;
+}
+
+.doc-nav button {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.doc-nav button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.doc {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 14px 18px 28px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.doc h1 { font-size: 18px; margin: 4px 0 12px; }
+.doc h2 { font-size: 15px; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.doc h3 { font-size: 13.5px; margin: 16px 0 6px; color: var(--typ); }
+.doc p { margin: 0 0 10px; }
+.doc ul, .doc ol { margin: 0 0 10px; padding-left: 22px; }
+.doc li { margin: 3px 0; }
+.doc a { color: var(--accent); }
+.doc hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
+
+.doc code {
+  font: 12px var(--mono);
+  background: #f1f3f6;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.doc pre.code {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: #f7f8fa;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: auto;
+}
+
+.doc pre.code code {
+  display: block;
+  background: transparent;
+  padding: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.doc table { border-collapse: collapse; margin: 0 0 12px; font-size: 12.5px; }
+.doc th, .doc td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+.doc th { background: #f7f8fa; }
+
+.doc blockquote {
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  border-left: 3px solid var(--accent);
+  background: #f7f8fa;
+}
+
+.code-box { position: relative; margin-bottom: 12px; }
+.code-box pre.code { margin-bottom: 0; }
+
+.code-box .code-open {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 11.5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.tutorial {
+  width: min(1000px, 92vw);
+  height: min(620px, 82vh);
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .18);
+  overflow: hidden;
+  color: var(--ink);
+}
+
+.tutorial::backdrop { background: rgba(15, 23, 42, .35); }
+
+.tutorial-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tutorial-head h2 {
+  margin: 0;
+  font: 700 13px/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.tutorial-body {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  height: calc(100% - 43px);
+}
+
+.tutorial-list {
+  border-right: 1px solid var(--line);
+  overflow: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tutorial-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tutorial-item strong { font-size: 12.5px; }
+.tutorial-item span { font-size: 11.5px; color: var(--dim); line-height: 1.35; }
+.tutorial-item:hover { background: #f7f8fa; }
+.tutorial-item.active { background: #eef2ff; border-color: #c7d2fe; }
+
+.tutorial .doc { height: 100%; }
+
 /* ---------------- à propos ---------------- */
 
 .about {

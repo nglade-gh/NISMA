@@ -86,6 +86,34 @@ public static class Program
             return Results.Ok(examples);
         });
 
+        // Aide du langage : les deux textes de référence du dépôt, rendus à la demande.
+        // Rien n'est recopié dans wwwroot : la documentation affichée est celle du disque.
+        app.MapGet("/api/help", () => Results.Ok(new
+        {
+            topics = Documentation.Help(app.Environment.ContentRootPath)
+                .Select(topic => new { id = topic.Id, title = topic.Title, html = topic.Html }),
+        }));
+
+        app.MapGet("/api/tutorials", () => Results.Ok(new
+        {
+            tutorials = Documentation.Tutorials(app.Environment.ContentRootPath)
+                .Select(tutoriel => new
+                {
+                    id = tutoriel.Id,
+                    title = tutoriel.Title,
+                    summary = tutoriel.Summary,
+                    models = tutoriel.Steps,
+                }),
+        }));
+
+        app.MapGet("/api/tutorials/{id}", (string id) =>
+        {
+            var html = Documentation.Tutorial(app.Environment.ContentRootPath, id);
+            return html is null
+                ? Results.NotFound(new { ok = false, error = "tutoriel inconnu" })
+                : Results.Ok(new { id, html });
+        });
+
         app.MapPost("/api/compile", (CompileRequest request) =>
         {
             if (string.IsNullOrWhiteSpace(request.Script))
