@@ -25,6 +25,21 @@ public static class Program
 
         app.MapGet("/api/health", () => Results.Ok(new { ok = true, name = "nisma-ide", version = 1 }));
 
+        // Identité du build, pour la fenêtre « À propos » : le dépôt est la seule source,
+        // la date vient du binaire et le commit du dépôt git qui le contient.
+        app.MapGet("/api/about", () =>
+        {
+            var about = About.Get();
+            return Results.Ok(new
+            {
+                name = about.Name,
+                author = about.Author,
+                version = about.Version,
+                commit = about.Commit,
+                repository = about.Repository,
+            });
+        });
+
         // Exemples pris dans NISMA/scripts : une seule source de vérité, pas de copie
         // dans wwwroot qui dériverait au premier changement de syntaxe.
         app.MapGet("/api/examples", () =>

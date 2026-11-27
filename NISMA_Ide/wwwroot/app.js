@@ -360,6 +360,33 @@
     ].join('\n');
   }
 
+  /* ---- à propos ---------------------------------------------------------- */
+
+  var aboutButton = document.getElementById('about');
+  var aboutDialog = document.getElementById('about-dialog');
+  var aboutAsked = false;
+
+  function openAbout() {
+    if (!aboutDialog) return;
+    if (!aboutDialog.open) aboutDialog.showModal();
+    if (aboutAsked) return;
+    aboutAsked = true;
+    fetch('/api/about')
+      .then(function (response) { return response.json(); })
+      .then(function (data) {
+        document.getElementById('about-version').textContent = data.version || 'inconnue';
+        document.getElementById('about-commit').textContent = data.commit || 'inconnu';
+        var link = document.getElementById('about-repo');
+        if (data.repository) link.href = data.repository;
+      })
+      .catch(function () {
+        document.getElementById('about-version').textContent = 'indisponible';
+        document.getElementById('about-commit').textContent = 'inconnu';
+      });
+  }
+
+  if (aboutButton) aboutButton.addEventListener('click', openAbout);
+
   restore();
   render();
   loadExamples();

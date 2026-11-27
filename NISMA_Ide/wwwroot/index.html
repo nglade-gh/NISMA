@@ -8,7 +8,7 @@
 </head>
 <body>
   <header class="bar">
-    <div class="brand">NISMA <span>atelier</span></div>
+    <button id="about" class="brand" title="À propos de NISMA">NISMA <span>atelier</span></button>
     <select id="examples" title="Charger un exemple"></select>
     <div class="grow"></div>
     <span id="status" class="status">prêt</span>
@@ -49,6 +49,25 @@
     <code># section</code> · <code>## bloc</code> · <code>- objet</code> ·
     <code>Ctrl+Entrée</code> compile · <code>Ctrl+S</code> enregistre
   </footer>
+
+  <dialog id="about-dialog" class="about" aria-labelledby="about-title">
+    <form method="dialog">
+      <button class="about-close" aria-label="Fermer">×</button>
+    </form>
+    <p id="about-title" class="about-title">NISMA</p>
+    <p class="about-name">
+      <b>N</b>etBioDyn <b>I</b>nstructions for <b>S</b>imulation and <b>M</b>odel <b>A</b>uthoring
+    </p>
+    <dl>
+      <dt>Auteur</dt>
+      <dd>Nicolas GLADE</dd>
+      <dt>Version</dt>
+      <dd><span id="about-version">…</span> · commit <code id="about-commit">…</code></dd>
+      <dt>Dépôt</dt>
+      <dd><a id="about-repo" href="https://github.com/nglade-gh/NISMA.git"
+             target="_blank" rel="noopener">github.com/nglade-gh/NISMA</a></dd>
+    </dl>
+  </dialog>
 
   <script src="app.js"></script>
 </body>

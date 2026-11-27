@@ -34,6 +34,12 @@ compilation côté navigateur.
 - **Exemples** lus dans `NISMA/scripts/*.ni` — une seule source de vérité, le serveur ne
   recopie rien.
 - **Persistance** du script courant dans `localStorage` ; un rechargement ne perd rien.
+- **À propos** : le titre `NISMA` est un bouton qui ouvre une fenêtre donnant le nom complet
+  (*NetBioDyn Instructions for Simulation and Model Authoring*, initiales mises en valeur),
+  l'auteur, la version — date et heure de construction plus commit court — et le lien du
+  dépôt. Les valeurs viennent de `GET /api/about`, qui lit le commit dans le dépôt git
+  contenant le binaire et la date dans le fichier de l'assemblage ; si git est absent, le
+  commit est annoncé « inconnu » plutôt qu'inventé.
 
 ## Architecture
 
