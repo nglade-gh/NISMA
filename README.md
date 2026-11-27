@@ -36,12 +36,12 @@ NISMA/
 │   ├── Field.cs
 │   ├── Grain.cs
 │   ├── JsonUtils.cs
-│   ├── Program.cs
-│   ├── nbd.csproj
+│   ├── Modifier.cs              # Modificateurs (prédicat global, méta-actions)
+│   ├── Simulation.cs            # Réglages, assets, simulation
+│   ├── NISMA_Core.csproj        # Liste explicite des fichiers compilés
 │   ├── sub classes/
 │   │   ├── Database.cs          # Icônes FontAwesome, couleurs CSS, directions
-│   │   ├── FieldTools.cs        # Productions/influences/perméabilités
-│   │   └── GrainModel.cs        # Modèle de simulation complet
+│   │   └── FieldTools.cs        # Productions/influences/perméabilités
 │   └── UML/
 │       ├── model.pu
 │       └── model uml.png
@@ -335,14 +335,19 @@ Fichier `models/nisma_format.json` :
 ### 6.2 Commandes
 
 ```bash
-# Construire
-dotnet build NISMA_Core/nbd.csproj
+# Construire le noyau (bibliothèque utilisée par tous les exemples)
+dotnet build NISMA_Core/NISMA_Core.csproj
 
-# Exécuter
-dotnet run --project NISMA_Core/nbd.csproj
+# Compiler un script NISMA en modèle .nbd2
+dotnet run --project NISMA_Lang -- scripts/game_of_life.ni -o game_of_life.nbd2
+
+# L'atelier web (coloration, compilation, téléchargement)
+dotnet run --project NISMA_Ide
 ```
 
-### 6.3 Résultats des tests
+La solution complète se construit par `dotnet build NISMA.sln`.
+
+### 6.3 Résultats des tests (historique, ancien programme de test supprimé)
 
 ```text
 === Test 1 : Grain complet ===
