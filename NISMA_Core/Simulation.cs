@@ -126,15 +126,16 @@ public class Asset3d
 /// </summary>
 public class Simulation
 {
-    /// <summary>Simulation name. Optional.</summary>
+    /// <summary>
+    /// Simulation name. Always written, empty when unnamed: Centyllion declares it as a
+    /// non-nullable field without default, so a file that omits it cannot be opened.
+    /// </summary>
     [JsonPropertyName("name")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public string? Name { get; set; }
+    public string Name { get; set; } = string.Empty;
 
-    /// <summary>Simulation description. Optional.</summary>
+    /// <summary>Simulation description. Always written, for the same reason as <see cref="Name"/>.</summary>
     [JsonPropertyName("description")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-    public string? Description { get; set; }
+    public string Description { get; set; } = string.Empty;
 
     /// <summary>Simulation settings.</summary>
     [JsonPropertyName("settings")]
