@@ -9,9 +9,11 @@ script `NISMA` pour générer des simulations plus puissantes que l'interface gr
 JSON/opérationnelle, tests passés. Nouveau : développement complet par l'assistant.
 
 **Langage** : `LANGAGE.md` (spécification), `GUIDE.md` (mode d'emploi du modélisateur),
-`NISMA_Lang/` (prototype du compilateur : script `.ni` → `.nbd2`) et `NISMA_Ide/`
-(atelier web avec coloration syntaxique), `docs/revue-langages.md` (revue des familles de
-langages et décisions de conception). Lancer l'atelier :
+`GLOSSAIRE.md` (une entrée par commande, ordre alphanumérique), `tutorials/` (cinq tutoriels
+progressifs), `NISMA_Lang/` (prototype du compilateur : script `.ni` → `.nbd2`) et
+`NISMA_Ide/` (atelier web avec coloration syntaxique, aide et tutoriels),
+`docs/revue-langages.md` (revue des familles de langages et décisions de conception).
+Lancer l'atelier :
 `dotnet run --project NISMA_Ide` puis <http://127.0.0.1:5080>.
 
 ---
