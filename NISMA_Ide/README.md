@@ -43,10 +43,17 @@ compilation côté navigateur.
 
 ## Aide et tutoriels
 
-L'onglet **Aide** affiche, dans l'interface, les deux textes de référence du dépôt :
-`GUIDE.md` (guide du modélisateur) et `LANGAGE.md` (référence du langage). Le serveur les
-lit sur le disque et les rend en HTML — il n'y a aucune copie dans `wwwroot`, donc l'aide
-affichée est exactement celle de l'arbre, et modifier un texte suffit à le voir changer.
+L'onglet **Aide** affiche, dans l'interface, les trois textes de référence du dépôt :
+`GUIDE.md` (guide du modélisateur), `LANGAGE.md` (référence du langage) et `GLOSSAIRE.md`
+(une entrée par commande, en ordre alphanumérique). Le serveur les lit sur le disque et les
+rend en HTML — il n'y a aucune copie dans `wwwroot`, donc l'aide affichée est exactement
+celle de l'arbre, et modifier un texte suffit à le voir changer.
+
+Les sections sont **repliables** : chaque titre devient une section fermée, avec son
+sommaire à gauche et un bouton « Tout déplier ». Une **recherche** filtre le sommaire sur le
+titre *et* sur le texte des sections ; quand il ne reste qu'un résultat, sa section s'ouvre
+d'elle-même. La structuration se fait sur le HTML rendu, pas dans le Markdown : les trois
+textes restent lisibles tels quels dans un éditeur ou sur GitHub.
 
 Le bouton **Tutoriel**, à côté de la liste des exemples, ouvre une fenêtre à deux colonnes :
 les tutoriels à gauche, le texte à droite. Les cinq tutoriels de `NISMA/tutorials/`

@@ -45,10 +45,18 @@
         <ul id="problems"></ul>
       </div>
       <div class="tab" id="tab-help">
-        <nav class="doc-nav" id="help-nav"></nav>
-        <article class="doc" id="help-body">
-          <p class="empty">Chargement de l'aide…</p>
-        </article>
+        <div class="doc-bar">
+          <nav class="doc-nav" id="help-nav"></nav>
+          <input id="help-search" type="search" placeholder="Rechercher une commande…"
+                 aria-label="Rechercher dans l'aide">
+          <button id="help-toggle" title="Déplier ou replier toutes les sections">Tout déplier</button>
+        </div>
+        <div class="doc-layout">
+          <nav class="doc-index" id="help-index" aria-label="Sommaire de l'aide"></nav>
+          <article class="doc" id="help-body">
+            <p class="empty">Chargement de l'aide…</p>
+          </article>
+        </div>
       </div>
     </aside>
   </main>

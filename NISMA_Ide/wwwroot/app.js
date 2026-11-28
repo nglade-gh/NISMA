@@ -365,11 +365,126 @@
 
   var helpNav = document.getElementById('help-nav');
   var helpBody = document.getElementById('help-body');
+  var helpIndex = document.getElementById('help-index');
+  var helpSearch = document.getElementById('help-search');
+  var helpToggle = document.getElementById('help-toggle');
   var helpTopics = null;
+  var helpChapters = [];
+  var helpAllOpen = false;
+
+  function normalize(text) {
+    var lower = (text || '').toLowerCase();
+    if (lower.normalize) lower = lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return lower;
+  }
+
+  /* Le HTML rendu est plat : chaque titre est regroupé avec ce qui le suit dans un
+     <details>. On obtient des sections repliables sans toucher au Markdown, et un
+     sommaire qui connaît la hiérarchie des titres. */
+  function structureHelp() {
+    var nodes = Array.prototype.slice.call(helpBody.childNodes);
+    helpBody.innerHTML = '';
+    helpChapters = [];
+
+    var stack = [{ level: 1, el: helpBody }];
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      if (!(node.nodeType === 1 && /^H[1-3]$/.test(node.tagName))) {
+        stack[stack.length - 1].el.appendChild(node);
+        continue;
+      }
+
+      var level = parseInt(node.tagName.charAt(1), 10);
+      if (level === 1) {
+        var title = document.createElement('h1');
+        title.className = 'doc-title';
+        title.textContent = node.textContent;
+        helpBody.appendChild(title);
+        stack = [{ level: 1, el: helpBody }];
+        continue;
+      }
+
+      while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
+
+      var details = document.createElement('details');
+      details.className = 'chapter lvl-' + level;
+      var summary = document.createElement('summary');
+      summary.textContent = node.textContent;
+      details.appendChild(summary);
+      var body = document.createElement('div');
+      body.className = 'chapter-body';
+      details.appendChild(body);
+      stack[stack.length - 1].el.appendChild(details);
+      stack.push({ level: level, el: body });
+
+      helpChapters.push({
+        level: level,
+        text: node.textContent,
+        key: normalize(node.textContent),
+        details: details
+      });
+    }
+
+    for (var c = 0; c < helpChapters.length; c++)
+      helpChapters[c].body = normalize(helpChapters[c].details.textContent);
+  }
+
+  function buildHelpIndex() {
+    helpIndex.innerHTML = '';
+    for (var i = 0; i < helpChapters.length; i++) {
+      (function (chapter, index) {
+        var item = document.createElement('button');
+        item.className = 'index-item lvl-' + chapter.level;
+        item.textContent = chapter.text;
+        item.setAttribute('data-i', String(index));
+        item.title = chapter.text;
+        item.addEventListener('click', function () { revealChapter(index); });
+        helpIndex.appendChild(item);
+      })(helpChapters[i], i);
+    }
+  }
+
+  function revealChapter(index) {
+    var chapter = helpChapters[index];
+    if (!chapter) return;
+    var node = chapter.details;
+    while (node) {
+      if (node.tagName === 'DETAILS') node.open = true;
+      node = node.parentElement;
+    }
+    chapter.details.scrollIntoView({ block: 'start' });
+    var items = helpIndex.querySelectorAll('.index-item');
+    for (var i = 0; i < items.length; i++) items[i].classList.toggle('active', i === index);
+  }
+
+  /* Recherche : le sommaire se filtre sur le titre *et* sur le texte de la section. */
+  function filterHelp() {
+    var query = normalize(helpSearch.value).trim();
+    var items = helpIndex.querySelectorAll('.index-item');
+    var matches = [];
+    for (var i = 0; i < items.length; i++) {
+      var chapter = helpChapters[i];
+      var match = !query || chapter.key.indexOf(query) >= 0 || chapter.body.indexOf(query) >= 0;
+      items[i].classList.toggle('hidden', !match);
+      if (match && query) matches.push(i);
+    }
+    if (matches.length === 1) revealChapter(matches[0]);
+  }
+
+  function setAllChapters(open) {
+    helpAllOpen = open;
+    var all = helpBody.querySelectorAll('details.chapter');
+    for (var i = 0; i < all.length; i++) all[i].open = open;
+    helpToggle.textContent = open ? 'Tout replier' : 'Tout déplier';
+  }
 
   function showHelpTopic(index) {
     if (!helpTopics || !helpTopics[index]) return;
     helpBody.innerHTML = helpTopics[index].html;
+    structureHelp();
+    buildHelpIndex();
+    helpSearch.value = '';
+    setAllChapters(false);
     var chips = helpNav.querySelectorAll('button');
     for (var i = 0; i < chips.length; i++) chips[i].classList.toggle('active', i === index);
   }
@@ -383,20 +498,22 @@
         helpTopics = data.topics || [];
         helpNav.innerHTML = '';
         for (var i = 0; i < helpTopics.length; i++) {
-          var chip = document.createElement('button');
-          chip.textContent = helpTopics[i].title;
-          chip.setAttribute('data-topic', String(i));
-          chip.addEventListener('click', function () {
-            showHelpTopic(parseInt(this.getAttribute('data-topic'), 10));
-          });
-          helpNav.appendChild(chip);
+          (function (topic, index) {
+            var chip = document.createElement('button');
+            chip.textContent = topic.title;
+            chip.addEventListener('click', function () { showHelpTopic(index); });
+            helpNav.appendChild(chip);
+          })(helpTopics[i], i);
         }
-        showHelpTopic(0);
+        if (helpTopics.length) showHelpTopic(0);
       })
       .catch(function () {
         helpBody.innerHTML = '<p class="empty">Aide indisponible : le serveur ne répond pas.</p>';
       });
   }
+
+  if (helpSearch) helpSearch.addEventListener('input', filterHelp);
+  if (helpToggle) helpToggle.addEventListener('click', function () { setAllChapters(!helpAllOpen); });
 
   /* ---- tutoriels -------------------------------------------------------- */
 

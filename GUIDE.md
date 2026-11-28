@@ -298,11 +298,13 @@ datés. Ce sont les limites du moteur, pas celles de la syntaxe.
 # start
 - 800 Cell random
 - 40 Virus random
-- 10 RestImmune in (5,5)
+- RestImmune in (5,5)
 ```
 
 `N Agent random` place N agents sur des cellules libres, en tirant dans l'ordre des
-déclarations ; `seed` rend le tirage reproductible.
+déclarations ; `seed` rend le tirage reproductible. `Agent in (x,y)` pose **un** agent sur
+une case précise : le prototype n'accepte pas encore de compteur devant cette forme
+(`10 RestImmune in (5,5)` est refusé).
 
 ## 9. Ce que le prototype ne fait pas encore
 

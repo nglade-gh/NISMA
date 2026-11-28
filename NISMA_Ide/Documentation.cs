@@ -26,6 +26,7 @@ public static class Documentation
         {
             Read(root, "GUIDE.md", "guide", "Guide du modélisateur"),
             Read(root, "LANGAGE.md", "langage", "Référence du langage"),
+            Read(root, "GLOSSAIRE.md", "glossaire", "Glossaire des commandes"),
         }.Where(topic => topic is not null).Select(topic => topic!).ToList();
     }
 
